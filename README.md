@@ -1,0 +1,1 @@
+This is a group project. Our result is a program which parse lists with people who want to go to HSE university and then analyse data to get predict about a minimum score enough to go to this university.
