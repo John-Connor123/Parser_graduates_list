@@ -1,12 +1,15 @@
 __all__ = ['get_telegram_graphs', 'create_telegram_bot', 'set_telegram_params_work', 'work_telegram_bot']
 
+import os
+import time
+import shutil
+
 import telebot
 from telebot import types
+from selenium import webdriver
+from selenium.webdriver.common.by import By
 
-
-def functions_for_handle():
-    def get_SNILS(message):
-        pass
+SNILS = None
 
 
 def get_telegram_graphs(final_scores, agreements, BVI_number, all_places):
@@ -31,14 +34,43 @@ def create_telegram_bot():
     bot = telebot.TeleBot(bot_token)
 
     @bot.message_handler(commands=['start'])
-    def run(message):
-        bot.reply_to(message, "Введите свой СНИЛС:")
+    def get_link(message):
+        bot.send_message(message.from_user.id, 'Вставьте ссылку на гугл таблицу:')
+        bot.register_next_step_handler(message, get_google_sheets)
 
     @bot.message_handler(func=lambda x: True)
-    def echo_all(message):
-        bot.send_message(message.from_user.id, 'Привет! Это парсер списка поступающих в ВШЭ. Чтобы начать, введите команду /start')
+    def welcome_message(message):
+        bot.reply_to(message, 'Привет! Это парсер списка поступающих в ВШЭ. Чтобы начать, введите команду /start')
 
-    return bot
+    def get_google_sheets(message):
+        website_link = message.text
+        parse_website_link(website_link)
+        bot.send_message(message.from_user.id, "Введите свой СНИЛС")
+        bot.register_next_step_handler(message, get_SNILS)
+
+    def get_SNILS(message):
+        global SNILS
+        SNILS = message.text
+        print("СНИЛС =", SNILS)
+
+    bot.polling()
+
+
+def parse_website_link(website_link):
+    # website_link = 'https://docs.google.com/spreadsheets/d/11Wci2MHaXvGuokesyxOOcIh_JBT6wH78Zu64pxaPZp8/edit#gid=1109409760'
+    path_downloads = fr"{os.path.expanduser('~')}\Downloads\students.xlsx"
+    xpath_input_button = "/html/body/div[2]/div[4]/div[1]/div[1]/div[1]"
+    xpath_download_button = "//*[@aria-label = 'Скачать d']"
+    xpath_download_format_type = "//*[@aria-label='Microsoft Excel (XLSX) x']"
+
+    browser = webdriver.Chrome()
+    browser.get(website_link)
+    browser.find_element(by=By.XPATH, value=xpath_input_button).click()
+    browser.find_element(by=By.XPATH, value=xpath_download_button).click()
+    browser.find_element(by=By.XPATH, value=xpath_download_format_type).click()
+    while not os.path.exists(path_downloads):
+        time.sleep(0.1)
+    shutil.move(path_downloads, os.getcwd())
 
 
 def set_telegram_params_work(auto_update=False):
@@ -57,7 +89,9 @@ def work_telegram_bot():
     Функция, через которую осуществяется управление телеграмм ботом
     :return: None
     '''
-    bot = create_telegram_bot()
-    bot.polling()
+    # bot = create_telegram_bot()
+    # bot.polling()
 
-work_telegram_bot()
+
+# work_telegram_bot()
+create_telegram_bot()
