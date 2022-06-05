@@ -38,20 +38,28 @@ def create_telegram_bot():
         bot.send_message(message.from_user.id, 'Вставьте ссылку на гугл таблицу:')
         bot.register_next_step_handler(message, get_google_sheets)
 
-    @bot.message_handler(func=lambda x: True)
-    def welcome_message(message):
-        bot.reply_to(message, 'Привет! Это парсер списка поступающих в ВШЭ. Чтобы начать, введите команду /start')
-
     def get_google_sheets(message):
-        website_link = message.text
-        parse_website_link(website_link)
-        bot.send_message(message.from_user.id, "Введите свой СНИЛС")
-        bot.register_next_step_handler(message, get_SNILS)
+        while not os.path.exists('students.xlsx'):
+            try:
+                website_link = message.text
+                parse_website_link(website_link)
+            except:
+                bot.reply_to(message, "Неправильная ссылка на гугл таблицу.")
+                bot.send_message(message.from_user.id, 'Вставьте ссылку на гугл таблицу:')
+                bot.register_next_step_handler(message, get_google_sheets)
+                break
+        if os.path.exists('students.xlsx'):
+            bot.send_message(message.from_user.id, "Введите свой СНИЛС")
+            bot.register_next_step_handler(message, get_SNILS)
 
     def get_SNILS(message):
         global SNILS
         SNILS = message.text
         print("СНИЛС =", SNILS)
+
+    @bot.message_handler(func=lambda x: True)
+    def welcome_message(message):
+        bot.reply_to(message, 'Привет! Это парсер списка поступающих в ВШЭ. Чтобы начать, введите команду /start')
 
     bot.polling()
 
