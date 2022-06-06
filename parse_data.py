@@ -21,7 +21,7 @@ def get_data(my_path):
 def get_data(my_path, file_name):
     '''
     :param my_path: путь к папке стаблицами
-    :param file_name: название xcls файла, в который будет записана полученная база данных
+    :param file_name:  название xcls файла, в который будет записана полученная база данных
     :return: таблица с данными, собранными из всех таблиц
     '''
     df = get_data(my_path)

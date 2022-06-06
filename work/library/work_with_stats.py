@@ -40,7 +40,7 @@ def plt_params():
 def Get_SNILS_by_exam(students, exam, points, operator = '>'):
     '''
     :param students: pandas.DataFrame, База данных
-    :param exam: string, Экзамен, по которому будет построена статистика
+    :param exam: string, Экзамен, по которому будет построена статистикаm
     :param points: integer, Количество баллов, относительно которого рассматривается статистика
     :param operator: char, '<', '>' или '='. Необходим для показа балов ниже, выше или равных порога (по умолчанию '>')
     :return: таблицу со СНИЛСами и данными по заданному экзамену, картинку с двумя графиками:
