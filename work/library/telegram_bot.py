@@ -3,6 +3,7 @@ __all__ = ['get_telegram_graphs', 'create_telegram_bot', 'set_telegram_params_wo
 import os
 import time
 import shutil
+import pandas as pd
 
 import telebot
 from telebot import types
@@ -10,6 +11,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 
 SNILS = None
+# is_SNILS_exist парсит только по первой странице. Можно доработать
 
 
 def get_telegram_graphs(final_scores, agreements, BVI_number, all_places):
@@ -55,7 +57,21 @@ def create_telegram_bot():
     def get_SNILS(message):
         global SNILS
         SNILS = message.text
-        print("СНИЛС =", SNILS)
+        while not is_SNILS_exist():
+            bot.reply_to(message, "Ваш СНИЛС отсутствует в списке поступающих")
+            get_google_sheets(message)
+            break
+        if is_SNILS_exist():
+            bot.send_message(message.from_user.id, "Хотите добавить автопроверку на изменение вас в списке поступающих?")
+            bot.register_next_step_handler(message, set_configuration)
+
+    def set_configuration(message):
+        if message.text.strip().lower() == 'да':
+            bot.send_message(message.from_user.id, "К сожалению, данная опция еще в разработке")
+        bot.send_message(message.from_user.id, f"Ваш СНИЛС: {SNILS}")
+        bot.send_message(message.from_user.id, "Бот заработал")
+
+
 
     @bot.message_handler(func=lambda x: True)
     def welcome_message(message):
@@ -79,6 +95,13 @@ def parse_website_link(website_link):
     while not os.path.exists(path_downloads):
         time.sleep(0.1)
     shutil.move(path_downloads, os.getcwd())
+
+
+def is_SNILS_exist():
+    df = pd.read_excel('students.xlsx', sheet_name='Sheet1')
+    if SNILS in set(df['СНИЛС'].to_list()):
+        return True
+    return False
 
 
 def set_telegram_params_work(auto_update=False):
