@@ -1,4 +1,4 @@
-__all__ = ['plt_params', 'Get_SNILS_by_exam']
+__all__ = ['Places_for_education', 'Get_SNILS_by_exam', 'Students_Data', 'program_breakdown', 'save_file']
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -25,22 +25,12 @@ def get_stats(data, education_form=''):
 
     return avg_score_commerce, min_score_commerce
 """
-def plt_params():
-    params = {'axes.titlesize': 16,
-              'legend.fontsize': 16,
-              'figure.figsize': (8, 8),
-              'axes.labelsize': 16,
-              'xtick.labelsize': 16,
-              'ytick.labelsize': 16,
-              'figure.titlesize': 22}
-    plt.rcParams.update(params)
-    plt.style.use('seaborn-whitegrid')
-    sns.set_style("white")
+
 
 def Get_SNILS_by_exam(students, exam, points, operator = '>'):
     '''
     :param students: pandas.DataFrame, База данных
-    :param exam: string, Экзамен, по которому будет построена статистикаm
+    :param exam: string, Экзамен, по которому будет построена статистика
     :param points: integer, Количество баллов, относительно которого рассматривается статистика
     :param operator: char, '<', '>' или '='. Необходим для показа балов ниже, выше или равных порога (по умолчанию '>')
     :return: таблицу со СНИЛСами и данными по заданному экзамену, картинку с двумя графиками:
@@ -73,6 +63,7 @@ def Get_SNILS_by_exam(students, exam, points, operator = '>'):
     plt.ylabel("")
     return df, plt
 
+
 def Places_for_education(students, programs, budget, paid, programStr = "Образовательная программа", budgetStr = "Бюджетные места", paidStr ="Платные места"):
     '''
     :param students: pandas.DataFrame, база данных
@@ -85,21 +76,23 @@ def Places_for_education(students, programs, budget, paid, programStr = "Обр�
     :return: таблица с количеством платных и/или бюджетных мест по выбраным программам
     и столбчатую диаграмму с количеством платных и бюджетных мест по выбранным программам
     '''
-    df = students[[programStr, budgetStr, paidStr]]
+    df = students[["Образовательная программа", "Бюджетные места", "Платные места"]]
     if budget == '-':
         if paid == '-':
-            df = df[[programStr]]
+            df = df[["Образовательная программа"]]
         else:
-            df = df[[programStr, paidStr]]
+            df = df[["Образовательная программа", "Платные места"]]
     elif paid == '-':
-        df = df[[programStr, budgetStr]]
-    df = df.drop_duplicates(subset = programStr, keep = "first")
+        df = df[["Образовательная программа", "Бюджетные места"]]
+    df = df.drop_duplicates(subset = "Образовательная программа", keep = "first")
     if programs:
-        buff = df[programStr].loc[~df[programStr].isin(programs)] #Я не знаю, как сделать иначе
-        df = df.loc[~df[programStr].isin(buff)]
+        df = df.loc[df["Образовательная программа"].isin(programs)]
     df.reset_index(inplace = True, drop = True)
-    df.plot(x = programStr, kind = "bar", title = "Количество мест на выбранных программах", figsize = (20,9))
-    return df, plt
+    df = df.set_index("Образовательная программа")
+    hist1 = df.plot(figsize=(26,25),kind="bar")
+    fig1 = hist1.get_figure()
+    return df, fig1
+
 
 def Students_Data(students,  without_exam, special_q, target_q, programs, points,
                   operator, without_examStr = "Право поступления без вступительных испытаний",
@@ -142,3 +135,35 @@ def Students_Data(students,  without_exam, special_q, target_q, programs, points
     if target_q == '+':
         df1.loc[:, target_qStr] = df[target_qStr]
     return df1
+
+
+def program_breakdown(students, params = "", programs = []):
+    df = students[["Образовательная программа","Заявление о согласии на зачисление","Возврат документов",
+                  "Литература","Русский язык ЕГЭ","Иностранный язык","История ЕГЭ","Математика ЕГЭ","Биология ЕГЭ",
+                  "Химия","Обществознание ЕГЭ","Физика","География","Информатика","Сумма конкурсных баллов",
+                  "Творческий конкурс Медиа","Творческий конкурс Мода","Творческий конкурс I этап",
+                  "Заявление о согласии на зачисление","Возврат документов"]]
+    if params == "q":
+        column = "Поступление на места в рамках особой квоты для лиц, имеющих особое право"
+    elif params == "tq":
+        column = "Поступление на места по целевой квоте"
+    else:
+        column = "Право поступления без вступительных испытаний"
+    df[column] = students[column]
+    if programs:
+        df = df["Образовательная программа"].loc[df["Образовательная программа"].isin(programs)]
+    if params not in ["q","tk"]:
+        df[column] = df[column].fillna("-")
+        df.loc[df[column] != "-", column] = "+"
+    new_column = pd.pivot_table(df, index = ["Образовательная программа"] + [column], values = "Сумма конкурсных баллов", aggfunc = len)
+    new_column.rename(columns = {"Сумма конкурсных баллов": "Количество поступающих"}, inplace = True)
+    pt = pd.pivot_table(df, index = ["Образовательная программа"] + [column])
+    pt = pd.concat([pt,new_column], axis = 1)
+    return pt, new_column
+
+
+def save_file(file, file_name, path=""):
+    if isinstance(file, pd.DataFrame):
+        file.to_excel(path + file_name + ".xlsx")
+    else:
+        file.savefig(path + file_name + ".png")

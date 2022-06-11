@@ -18,15 +18,6 @@ def get_data(my_path):
         students = students.append(func(name))
     return students
 
-def get_data(my_path, file_name):
-    '''
-    :param my_path: путь к папке стаблицами
-    :param file_name:  название xcls файла, в который будет записана полученная база данных
-    :return: таблица с данными, собранными из всех таблиц
-    '''
-    df = get_data(my_path)
-    df.to_excel(f"{my_path}/{file_name}.xlsx")
-    return df
 
 # Эта функция достаёт данные
 def func(name):
