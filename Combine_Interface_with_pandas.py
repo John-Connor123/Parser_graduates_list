@@ -82,8 +82,6 @@ for name in listdir('D:/VUZD/PythonBD/Data_csv/'):
 
 
 
-
-
 def entrant_data(without_exam, special_q, target_q, ed_progaram, points, operator):
     m = students[["№ п/п", "СНИЛС", 
                  "Право поступления без вступительных испытаний", 
@@ -130,60 +128,63 @@ def entrant_data(without_exam, special_q, target_q, ed_progaram, points, operato
                 pass
             else:
                 m = m[m["Сумма конкурсных баллов"] > points]     
-    m.to_excel('D:/VUZD/PythonBD/Example7.xlsx', na_rep='')
     return(m)
 
 
 
 def Get_SNILS_by_exam(exam, points, operator):
-    m = students[["СНИЛС", exam]] 
+    m = students[["СНИЛС", exam, "Сумма конкурсных баллов"]] 
     m = m[~m[exam].isnull()]
     m = m[m[exam] != ""]
-    m[exam] = m[exam].astype(int)
-    if operator == '>':
-        m = m[m[exam] > points]
-    elif operator == '<':
-        m = m[m[exam] < points]
-    elif operator == '=':
-        m = m[m[exam] == points]
-    elif operator == '<=':
-        m = m[m[exam] <= points]
-    elif operator == '>=':
-        m = m[m[exam] >= points]
-    elif operator == '>=<':
-        pass
+    try:
+        points = int(points)
+    except ValueError:
+        error_of_int = True
     else:
-        m = m[m[exam] > points]
+        error_of_int = False  
+    if error_of_int == False:
+            m.loc[m["Сумма конкурсных баллов"] == "", "Сумма конкурсных баллов"] = 0
+            m.loc[:, "Сумма конкурсных баллов"] = m["Сумма конкурсных баллов"].astype(int)
+            if operator == '>':
+                m = m[m["Сумма конкурсных баллов"] > points]
+            elif operator == '<':
+                m = m[m["Сумма конкурсных баллов"] < points]
+            elif operator == '=':
+                m = m[m["Сумма конкурсных баллов"] == points]
+            elif operator == '<=':
+                m = m[m["Сумма конкурсных баллов"] <= points]
+            elif operator == '>=':
+                m = m[m["Сумма конкурсных баллов"] >= points]
+            elif operator == '<>':
+                m = m[m["Сумма конкурсных баллов"] != points]
+            elif operator == '<>=':
+                pass
+            else:
+                m = m[m["Сумма конкурсных баллов"] > points] 
     m.reset_index(inplace = True, drop = True)
-    m.to_excel('D:/VUZD/PythonBD/Example1.xlsx', na_rep='')
     return (m)
 
+    
 def Places_for_education(name, budget, paid):
     m = students[["Образовательная программа", "Бюджетные места", "Платные места"]] 
     m = m.drop_duplicates(subset = 'Образовательная программа', keep = 'first')
     m.reset_index(inplace = True, drop = True)
-    if name == 'all':
-        if budget == '+':
-            m = m[m["Бюджетные места"] != "0"]
-        elif budget == '-':
+    name = '"' + name + '"'
+    print(name + "$$$$$$$$$$")
+    if name in m["Образовательная программа"].values:
+        m = m[m["Образовательная программа"] == name]
+        if budget == True:
             m = m[m["Бюджетные места"] == "0"]
-        if paid == '+':
-            m = m[m["Платные места"] != "0"]
-        elif paid == '-':
+        if paid == True:
             m = m[m["Платные места"] == "0"]
         return (m)
     else:
-        m = m[m["Образовательная программа"] == name]
-        if budget == '+':
-            m = m[m["Бюджетные места"] != "0"]
-        elif budget == '-':
+        if budget == True:
             m = m[m["Бюджетные места"] == "0"]
-        if paid == '+':
-            m = m[m["Платные места"] != "0"]
-        elif paid == '-':
+        if paid == True:
             m = m[m["Платные места"] == "0"]
         return (m)
-    m.to_excel('D:/VUZD/PythonBD/Example2.xlsx', na_rep='')
+
     
 
 def quota_program_breakdown():
@@ -394,32 +395,146 @@ def bd_entr():
 def get_snils():
     window = tk.Toplevel()
     window.geometry("1000x900+900+100")
-    
+    m = pd.DataFrame()
+    style = ttk.Style(window)
+    style.theme_use("clam")
+    def fixed_map(option):
+        return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
+                elm[:2] != ('!disabled', '!selected')]
+    table = ttk.Treeview(window, columns = ("N","SNILS","Exam name", "points"))
+    table.column('#0',width=0, stretch="no")
+    table.column('N', anchor="center", width=80)
+    table.column('SNILS', anchor="center", width=80)
+    table.column('Exam name', anchor="center", width=120)
+    table.column('points', anchor="center", width=120)
+    table.heading('#0', text='', anchor="center")
+    table.heading('N', text='№ студента', anchor="center")
+    table.heading('SNILS', text='СНИЛС', anchor="center")
+    table.heading('Exam name', text='Экзамен', anchor="center")
+    table.heading('points', text='Сумма баллов', anchor="center")
+    table.pack(side = "right", fill = "both", expand=True)
+    def night_theme():
+        window.config(bg = "#3E3D45")
+        left.config(bg = "#3E3D45")
+        name.config(bg = "#3E3D45", fg = "#E1DFEE")
+        points_entry.config(bg = "#3E3D45", fg = "#E1DFEE")
+        big.config(bg = "#3E3D45", fg = "#E1DFEE")
+        little .config(bg = "#3E3D45", fg = "#E1DFEE")
+        equally.config(bg = "#3E3D45", fg = "#E1DFEE")
+        clear.config(bg = "#3E3D45", fg = "#E1DFEE")
+        start.config(bg = "#3E3D45", fg = "#E1DFEE")
+        subscribe.config(bg = "#3E3D45", fg = "#E1DFEE")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="#3E3D45",
+                        fieldbackground="#3E3D45",
+                        foreground="#E1DFEE")
+    def day_theme():
+        window.config(bg = "#f0f0f0")
+        left.config(bg = "#f0f0f0")
+        name.config(bg = "#f0f0f0", fg = "#000000")
+        points_entry.config(bg = "#f0f0f0", fg = "#000000")
+        big.config(bg = "#f0f0f0", fg = "#000000")
+        little .config(bg = "#f0f0f0", fg = "#000000")
+        equally.config(bg = "#f0f0f0", fg = "#000000")
+        clear.config(bg = "#f0f0f0", fg = "#000000")
+        start.config(bg = "#f0f0f0", fg = "#000000")
+        subscribe.config(bg = "#f0f0f0", fg = "#000000")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="white",
+                        fieldbackground="white",
+                        foreground="black")
+    def get_snils_create_table():
+        table.delete(*table.get_children())
+        operator = ''
+        if little_var.get() == True:
+            operator = operator + '<'
+        if big_var.get() == True:
+            operator = operator + '>'
+        if equally_var.get() == True:
+            operator = operator + '='
+        m = Get_SNILS_by_exam(exam_var.get(), points_var.get(), operator)
+        x = 0
+        for i in m.iterrows():
+            rowLabels = m.index.tolist()
+            table.insert('', x, text=rowLabels[x], values=m.iloc[x,:].tolist())
+            x+=1
+    def save_xlsx_get_snils():
+        operator = ''
+        if little_var.get() == True:
+            operator = operator + '<'
+        if big_var.get() == True:
+            operator = operator + '>'
+        if equally_var.get() == True:
+            operator = operator + '='
+        m = entrant_data(ed_progaram_var.get(), points_var.get(), operator)
+        m.to_excel('D:/VUZD/PythonBD/Get_snils.xlsx', na_rep='')
+        
     left = tk.Frame(window)
     left.pack(side="left")
     
-    exam = tk.Entry(left, width = 25, font = ("Times",20))
-    exam.insert("0","Enter the name of the exam")
-    exam.pack(side = "top")
+    mainmenu = tk.Menu(window, tearoff=0)
+    menu1 = tk.Menu(mainmenu, tearoff=0)
+    menu1.add_command(label = 'Сохранить xlsx', command = save_xlsx_get_snils)
+    menu1.add_command(label = 'Тёмная тема', command = night_theme)
+    menu1.add_command(label = 'Светлая тема', command = day_theme)
+    mainmenu.add_cascade(label = "Файл", menu = menu1)
+    mainmenu.add_command(label="Exit", command=window.destroy)
+    window.config(menu=mainmenu)
     
-    points = tk.Entry(left, width = 25, font = ("Times",20))
-    points.insert("0","Enter the number of points")
-    points.pack(side = "top")
+    exam_var = tk.StringVar()
+    exam_var.set("Enter the name of the exam")
+    name = tk.Entry(left, width = 35, font = ("Times",20), textvariable = exam_var)
+    name.pack(side = "top")
     
-    big = tk.Checkbutton(left, text='>', font = ("Times",20))
+    points_var = tk.StringVar()
+    points_var.set("Enter the number of points")
+    points_entry = tk.Entry(left, width = 25, font = ("Times",20), textvariable = points_var)
+    points_entry.pack(side = "top")
+    
+    big_var = tk.BooleanVar()
+    big_var.set(False)
+    big = tk.Checkbutton(left, text='>',
+                         font = ("Times",20),
+                         variable = big_var,
+                         onvalue = True,
+                         offvalue = False)
     big.pack(side = "top")
     
-    little = tk.Checkbutton(left, text='<', font = ("Times",20))
+    little_var = tk.BooleanVar()
+    little_var.set(False)
+    little = tk.Checkbutton(left, 
+                            text='<', 
+                            font = ("Times",20),
+                            variable = little_var,
+                            onvalue = True,
+                            offvalue = False)
     little.pack(side = "top")
     
-    equally = tk.Checkbutton(left, text='=', font = ("Times",20))
+    equally_var = tk.BooleanVar()
+    equally_var.set(False)
+    equally = tk.Checkbutton(left, 
+                             text='=', 
+                             font = ("Times",20),
+                             variable = equally_var,
+                             onvalue = True,
+                             offvalue = False)
     equally.pack(side = "top")
     
-    start = tk.Button(left, text = "Start", font = ("Lucida Handwriting",10),  background = "white")
+    def clear_input():
+        big_var.set(False)
+        little_var.set(False)
+        equally_var.set(False)
+        points_var.set("Enter the number of points")
+        ed_progaram_var.set("Enter the name of the exam")
+    
+    clear = tk.Button(left, text = "Очистить выбор", font = ("Times",10),  background = "white", command = clear_input)
+    clear.pack(side = "top")
+    
+    start = tk.Button(left, text = "Start", font = ("Lucida Handwriting",10),  background = "white", command = get_snils_create_table)
     start.pack(side = "top")
     
-    save = tk.Button(left, text = "Сохранить в excel", font = ("Lucida Handwriting",10),  background = "white")
-    save.pack(side = "top")
     
     message = """
     Данная функция показывает людей согласно их баллам ЕГЭ.
@@ -430,17 +545,8 @@ def get_snils():
     subscribe = tk.Label(left, text = message, font = ("Lucida Handwriting",15))
     subscribe.pack(side = "top")
     
-    table = ttk.Treeview(window, columns = ("N","SNILS","Exam name"))
-    table.column('#0',width=0, stretch="no")
-    table.column('N', anchor="center", width=80)
-    table.column('SNILS', anchor="center", width=80)
-    table.column('Exam name', anchor="center", width=120)
-    table.heading('#0', text='', anchor="center")
-    table.heading('N', text='N', anchor="center")
-    table.heading('SNILS', text='SNILS', anchor="center")
-    table.heading('Exam name', text='Exam name', anchor="center")
     
-    table.pack(side = "top")
+
     
     
     
@@ -448,34 +554,13 @@ def places():
     window = tk.Toplevel()
     window.geometry("1000x900+900+100")
     
-    left = tk.Frame(window)
-    left.pack(side="left")
-    
-    name = tk.Entry(left, width = 40, font = ("Times",20))
-    name.insert("0","Enter the name of the education programm or 'all'")
-    name.pack(side = "top")
-    
-    budget = tk.Checkbutton(left, text = "Убрать обр.программы с бюджетными местами", font = ("Times",20))
-    budget.pack(side = "top")
-    
-    paid = tk.Checkbutton(left, text = "Убрать обр.программы с платными местами", font = ("Times",20))
-    paid.pack(side = "top")
-    
-    start = tk.Button(left, text = "Start", font = ("Lucida Handwriting",10),  background = "white")
-    start.pack(side = "top")
-    
-    save = tk.Button(left, text = "Сохранить в excel", font = ("Lucida Handwriting",10),  background = "white")
-    save.pack(side = "top")
-    
-    message = """
-    Эта функция позволяет увидеть таблицу 
-    доступных образовательных программ 
-    и доступных мест для поступления.
-    """
-    #" "
-    subscribe = tk.Label(left, text = message, font = ("Lucida Handwriting",15))
-    subscribe.pack(side = "top")
-    
+    m = pd.DataFrame()
+    style = ttk.Style(window)
+    style.theme_use("clam")
+    def fixed_map(option):
+        return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
+                elm[:2] != ('!disabled', '!selected')]
+        
     table = ttk.Treeview(window, columns = ("Образовательная программа","Бюджетные места","Платные места"))
     table.column('#0',width=0, stretch="no")
     table.column('Образовательная программа', anchor="center", width=120)
@@ -485,8 +570,109 @@ def places():
     table.heading('Образовательная программа', text='Образовательная программа', anchor="center")
     table.heading('Бюджетные места', text='Бюджетные места', anchor="center")
     table.heading('Платные места', text='Платные места', anchor="center")
+    table.pack(side = "right", fill = "both", expand=True)
     
-    table.pack(side = "top")
+    def night_theme():
+        window.config(bg = "#3E3D45")
+        left.config(bg = "#3E3D45")
+        paid.config(bg = "#3E3D45", fg = "#E1DFEE")
+        budget.config(bg = "#3E3D45", fg = "#E1DFEE")
+        clear.config(bg = "#3E3D45", fg = "#E1DFEE")
+        start.config(bg = "#3E3D45", fg = "#E1DFEE")
+        subscribe.config(bg = "#3E3D45", fg = "#E1DFEE")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="#3E3D45",
+                        fieldbackground="#3E3D45",
+                        foreground="#E1DFEE")  
+    def day_theme():
+        window.config(bg = "#f0f0f0")
+        left.config(bg = "#f0f0f0")
+        paid.config(bg = "#3E3D45", fg = "#E1DFEE")
+        budget.config(bg = "#3E3D45", fg = "#E1DFEE")
+        clear.config(bg = "#f0f0f0", fg = "#000000")
+        start.config(bg = "#f0f0f0", fg = "#000000")
+        subscribe.config(bg = "#f0f0f0", fg = "#000000")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="white",
+                        fieldbackground="white",
+                        foreground="black")    
+    def places_create_table():
+        table.delete(*table.get_children())
+        m = Places_for_education(ed_progaram_var.get(), budget_var.get(), paid_var.get())
+        x = 0
+        for i in m.iterrows():
+            rowLabels = m.index.tolist()
+            table.insert('', x, text=rowLabels[x], values=m.iloc[x,:].tolist())
+            x+=1
+            
+    def save_xlsx_places():
+        m = Places_for_education(ed_progaram_var.get(), budget_var.get(), paid_var.get())
+        x = 0
+        m.to_excel('D:/VUZD/PythonBD/Places.xlsx', na_rep='')
+    
+    mainmenu = tk.Menu(window, tearoff=0)
+    menu1 = tk.Menu(mainmenu, tearoff=0)
+    menu1.add_command(label = 'Сохранить xlsx', command = save_xlsx_places)
+    menu1.add_command(label = 'Тёмная тема', command = night_theme)
+    menu1.add_command(label = 'Светлая тема', command = day_theme)
+    mainmenu.add_cascade(label = "Файл", menu = menu1)
+    mainmenu.add_command(label="Exit", command=window.destroy)
+    window.config(menu=mainmenu)
+        
+        
+    left = tk.Frame(window)
+    left.pack(side="left")
+    
+    
+    ed_progaram_var = tk.StringVar()
+    ed_progaram_var.set("Enter the name of the education programm")
+    name = tk.Entry(left, width = 35, font = ("Times",20), textvariable = ed_progaram_var)
+    name.pack(side = "top")
+    
+    budget_var = tk.BooleanVar()
+    budget_var.set(False)
+    budget = tk.Checkbutton(left,
+                            text = "Убрать обр.программы с бюджетными местами",
+                            font = ("Times",20),
+                            variable = budget_var,
+                            onvalue = True,
+                            offvalue = False)
+    budget.pack(side = "top")
+    
+    
+    paid_var = tk.BooleanVar()
+    paid_var.set(False)
+    paid = tk.Checkbutton(left,
+                            text = "Убрать обр.программы с платными местами",
+                            font = ("Times",20),
+                            variable = paid_var,
+                            onvalue = True,
+                            offvalue = False)
+    paid.pack(side = "top")
+    
+    def clear_input():
+        budget_var.set(False)
+        paid_var.set(False)
+        ed_progaram_var.set("Enter the name of the education programm")
+    
+    clear = tk.Button(left, text = "Очистить выбор", font = ("Times",10),  background = "white", command = clear_input)
+    clear.pack(side = "top")
+
+    start = tk.Button(left, text = "Start", font = ("Times",10),  background = "white", command = places_create_table)
+    start.pack(side = "top")
+
+    
+    message = """
+    Эта функция позволяет увидеть таблицу 
+    доступных образовательных программ 
+    и доступных мест для поступления.
+    """
+    #" "
+    subscribe = tk.Label(left, text = message, font = ("Lucida Handwriting",15))
+    subscribe.pack(side = "top")
+
 
 
 
@@ -495,9 +681,22 @@ def places():
 def Entrant_data():
     window = tk.Toplevel()
     window.geometry("1700x900+100+100")
-    operator = ''
+    m = pd.DataFrame()
+    style = ttk.Style(window)
+    style.theme_use("clam")
+    def fixed_map(option):
+        return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
+                elm[:2] != ('!disabled', '!selected')]
+
     
-    table = ttk.Treeview(window, columns = ("N","СНИЛС","Без испытаний","Особое право","Целевая квота","Программа","Сумма баллов"))
+    table = ttk.Treeview(window,
+                         columns = ("N",
+                                    "СНИЛС",
+                                    "Без испытаний",
+                                    "Особое право",
+                                    "Целевая квота",
+                                    "Программа",
+                                    "Сумма баллов"))
     table.column('#0',width=0, stretch="no")
     table.column('N', anchor="center", width=100)
     table.column('СНИЛС', anchor="center", width=100)
@@ -516,7 +715,51 @@ def Entrant_data():
     table.heading('Сумма баллов', text='Сумма баллов', anchor="center")
     table.pack(side = "right", fill = "both", expand=True)
     
-
+    def night_theme():
+        window.config(bg = "#3E3D45")
+        left.config(bg = "#3E3D45")
+        right.config(bg = "#3E3D45", fg = "#E1DFEE")
+        no_right.config(bg = "#3E3D45", fg = "#E1DFEE")
+        special.config(bg = "#3E3D45", fg = "#E1DFEE")
+        no_special.config(bg = "#3E3D45", fg = "#E1DFEE")
+        target.config(bg = "#3E3D45", fg = "#E1DFEE")
+        no_target.config(bg = "#3E3D45", fg = "#E1DFEE")
+        name.config(bg = "#3E3D45", fg = "#E1DFEE")
+        points_entry.config(bg = "#3E3D45", fg = "#E1DFEE")
+        big.config(bg = "#3E3D45", fg = "#E1DFEE")
+        little .config(bg = "#3E3D45", fg = "#E1DFEE")
+        equally.config(bg = "#3E3D45", fg = "#E1DFEE")
+        clear.config(bg = "#3E3D45", fg = "#E1DFEE")
+        start.config(bg = "#3E3D45", fg = "#E1DFEE")
+        subscribe.config(bg = "#3E3D45", fg = "#E1DFEE")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="#3E3D45",
+                        fieldbackground="#3E3D45",
+                        foreground="#E1DFEE")
+        
+    def day_theme():
+        window.config(bg = "#f0f0f0")
+        left.config(bg = "#f0f0f0")
+        right.config(bg = "#f0f0f0", fg = "#000000")
+        no_right.config(bg = "#f0f0f0", fg = "#000000")
+        special.config(bg = "#f0f0f0", fg = "#000000")
+        no_special.config(bg = "#f0f0f0", fg = "#000000")
+        target.config(bg = "#f0f0f0", fg = "#000000")
+        no_target.config(bg = "#f0f0f0", fg = "#000000")
+        name.config(bg = "#f0f0f0", fg = "#000000")
+        points_entry.config(bg = "#f0f0f0", fg = "#000000")
+        big.config(bg = "#f0f0f0", fg = "#000000")
+        little .config(bg = "#f0f0f0", fg = "#000000")
+        equally.config(bg = "#f0f0f0", fg = "#000000")
+        clear.config(bg = "#f0f0f0", fg = "#000000")
+        start.config(bg = "#f0f0f0", fg = "#000000")
+        subscribe.config(bg = "#f0f0f0", fg = "#000000")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="white",
+                        fieldbackground="white",
+                        foreground="black")
     
     def entrant_data_create_table():
         table.delete(*table.get_children())
@@ -527,12 +770,42 @@ def Entrant_data():
             operator = operator + '>'
         if equally_var.get() == True:
             operator = operator + '='
-        m = entrant_data(without_exam_var.get(), special_q_var.get(), target_q_var.get(), ed_progaram_var.get(), points_var.get(), operator)
+        m = entrant_data(without_exam_var.get(),
+                         special_q_var.get(),
+                         target_q_var.get(),
+                         ed_progaram_var.get(),
+                         points_var.get(),
+                         operator)
         x = 0
         for i in m.iterrows():
             rowLabels = m.index.tolist()
             table.insert('', x, text=rowLabels[x], values=m.iloc[x,:].tolist())
             x+=1
+    
+    def save_xlsx_Entrant_data():
+        operator = ''
+        if little_var.get() == True:
+            operator = operator + '<'
+        if big_var.get() == True:
+            operator = operator + '>'
+        if equally_var.get() == True:
+            operator = operator + '='
+        m = entrant_data(without_exam_var.get(),
+                         special_q_var.get(),
+                         target_q_var.get(),
+                         ed_progaram_var.get(),
+                         points_var.get(),
+                         operator)
+        m.to_excel('D:/VUZD/PythonBD/Entrant_data.xlsx', na_rep='')
+    
+    mainmenu = tk.Menu(window, tearoff=0)
+    menu1 = tk.Menu(mainmenu, tearoff=0)
+    menu1.add_command(label = 'Сохранить xlsx', command = save_xlsx_Entrant_data)
+    menu1.add_command(label = 'Тёмная тема', command = night_theme)
+    menu1.add_command(label = 'Светлая тема', command = day_theme)
+    mainmenu.add_cascade(label = "Файл", menu = menu1)
+    mainmenu.add_command(label="Exit", command=window.destroy)
+    window.config(menu=mainmenu)
         
 
     left = tk.Frame(window)
@@ -626,12 +899,15 @@ def Entrant_data():
         without_exam_var.set('')
         special_q_var.set('')
         target_q_var.set('')
+        big_var.set(False)
+        little_var.set(False)
+        equally_var.set(False)
+        points_var.set("Enter the number of points")
+        ed_progaram_var.set("Enter the name of the education programm")
     
     clear = tk.Button(left, text = "Очистить выбор", font = ("Times",10),  background = "white", command = clear_input)
     clear.pack(side = "top")
-    
-    save = tk.Button(left, text = "Сохранить в excel", font = ("Times",10),  background = "white")
-    save.pack(side = "top")
+
     
     start = tk.Button(left, text = "Start", font = ("Times",10),  background = "white", command = entrant_data_create_table)
     start.pack(side = "top")
@@ -644,7 +920,6 @@ def Entrant_data():
     #" "
     subscribe = tk.Label(left, text = message, font = ("Lucida Handwriting",15))
     subscribe.pack(side = "top")
-    
 
     
 
@@ -655,9 +930,6 @@ def quota():
     
     left = tk.Frame(window)
     left.pack(side="left")
-    
-    save = tk.Button(left, text = "Сохранить в excel", font = ("Lucida Handwriting",10),  background = "white")
-    save.pack(side = "top")
     
     message = """
     Данная функция позволяет пользователю 
@@ -693,9 +965,7 @@ def without_exams():
     
     left = tk.Frame(window)
     left.pack(side="left")
-    
-    save = tk.Button(left, text = "Сохранить в excel", font = ("Lucida Handwriting",10),  background = "white")
-    save.pack(side = "top")
+
     
     message = """
     Данная функция позволяет пользователю 
@@ -758,10 +1028,5 @@ but.pack(side = "bottom")
 
 
 root.mainloop()
-
-
-
-
-
 
 
