@@ -13,8 +13,8 @@ def get_data(my_path):
     if not path.exists(my_path + "/csv"):
         makedirs(my_path + "/csv")
     for name in listdir(my_path):
-        ws = pd.read_excel(f"{my_path}/" + name)
-        ws.to_csv(f"{my_path}/csv" + name + ".csv", encoding="cp1251", sep=';', index=False)
+        buffer = pd.read_excel(f"{my_path}/" + name)
+        buffer.to_csv(f"{my_path}/csv" + name + ".csv", encoding="cp1251", sep=';', index=False)
     students = pd.DataFrame()
     for name in listdir(my_path):
         students = students.append(func(name))
@@ -68,18 +68,18 @@ def func(name):
     num_of_stud = 0
     for i in students:
         num_of_stud += 1
-    x = np.array("Образовательная программа")
+    array = np.array("Образовательная программа")
     for i in range(num_of_stud, 1, -1):
-        x = np.append(x, napravlenie)
-    students = np.c_[students, x]
-    x = np.array("Бюджетные места")
+        array = np.append(array, napravlenie)
+    students = np.c_[students, array]
+    array = np.array("Бюджетные места")
     for i in range(num_of_stud, 1, -1):
-        x = np.append(x, budget)
-    students = np.c_[students, x]
-    x = np.array("Платные места")
+        array = np.append(array, budget)
+    students = np.c_[students, array]
+    array = np.array("Платные места")
     for i in range(num_of_stud, 1, -1):
-        x = np.append(x, platno)
-    students = np.c_[students, x]
+        array = np.append(array, platno)
+    students = np.c_[students, array]
     # Запиливаем пандас датафрейм и название столбцов
     students = pd.DataFrame(students[1:, ], columns=students[0, ])
     return students
@@ -93,11 +93,12 @@ def program_breakdown(students, params="", programs=[]):
     :param programs: list<string>, список образовательных программ
     :return: pandas.DataFrame, содержащий данные по выбраной категории
     """
-    df = students[["Образовательная программа", "Заявление о согласии на зачисление", "Возврат документов",
-                   "Литература", "Русский язык ЕГЭ", "Иностранный язык", "История ЕГЭ", "Математика ЕГЭ",
-                   "Биология ЕГЭ",
-                   "Химия", "Обществознание ЕГЭ", "Физика", "География", "Информатика", "Сумма конкурсных баллов",
-                   "Творческий конкурс Медиа", "Творческий конкурс Мода", "Творческий конкурс I этап",
+    data_frame = students[["Образовательная программа", "Заявление о согласии на зачисление",
+                   "Возврат документов", "Литература", "Русский язык ЕГЭ",
+                   "Иностранный язык", "История ЕГЭ", "Математика ЕГЭ", "Биология ЕГЭ",
+                   "Химия", "Обществознание ЕГЭ", "Физика", "География", "Информатика",
+                   "Сумма конкурсных баллов", "Творческий конкурс Медиа",
+                   "Творческий конкурс Мода", "Творческий конкурс I этап",
                    "Заявление о согласии на зачисление", "Возврат документов"]]
     if params == "q":
         column = "Поступление на места в рамках особой квоты для лиц, имеющих особое право"
@@ -105,15 +106,16 @@ def program_breakdown(students, params="", programs=[]):
         column = "Поступление на места по целевой квоте"
     else:
         column = "Право поступления без вступительных испытаний"
-    df[column] = students[column]
+    data_frame[column] = students[column]
     if programs:
-        df = df["Образовательная программа"].loc[df["Образовательная программа"].isin(programs)]
-    if params not in ["q", "tk"]:
-        df[column] = df[column].fillna("-")
-        df.loc[df[column] != "-", column] = "+"
-    new_column = pd.pivot_table(df, index=["Образовательная программа"] + [column], values="Сумма конкурсных баллов",
+        data_frame = data_frame["Образовательная программа"].loc[data_frame["Образовательная программа"].isin(programs)]
+    if params not in ["q", "tq"]:
+        data_frame[column] = data_frame[column].fillna("-")
+        data_frame.loc[data_frame[column] != "-", column] = "+"
+    new_column = pd.pivot_table(data_frame, index=["Образовательная программа"] + [column],
+                                values="Сумма конкурсных баллов",
                                 aggfunc=len)
     new_column.rename(columns={"Сумма конкурсных баллов": "Количество поступающих"}, inplace=True)
-    pt = pd.pivot_table(df, index=["Образовательная программа"] + [column])
-    pt = pd.concat([pt, new_column], axis=1)
-    return pt
+    table = pd.pivot_table(data_frame, index=["Образовательная программа"] + [column])
+    table = pd.concat([table, new_column], axis=1)
+    return table
