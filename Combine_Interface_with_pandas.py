@@ -78,7 +78,53 @@ for name in listdir('D:/VUZD/PythonBD/Data_csv/'):
 
 #А здесь я начинаю искать нужные мне данные
 
+def Obr_program_bd():
+        n = students[["Заявление о согласии на зачисление","Возврат документов","Образовательная программа", "Бюджетные места", "Платные места", "Сумма конкурсных баллов"]]
+        n = n[n["Заявление о согласии на зачисление"] == "+"]
+        n = n[n["Возврат документов"] == "-"]
+        n['num'] = n.groupby("Образовательная программа").cumcount()
+        n = n[n["Бюджетные места"].astype(int) == n["num"]]
+        m = n[["Образовательная программа", "Бюджетные места", "Платные места","Сумма конкурсных баллов"]] 
+        m = m.rename(columns={'Сумма конкурсных баллов': 'Проходной балл'})
+        m.loc[m["Бюджетные места"].astype(int) == 0, "Проходной балл"] = 0
+        m.reset_index(inplace = True, drop = True)
+        return m
 
+def zayavlenie_zachislenie():
+    m = students[["СНИЛС",
+                  "Заявление о согласии на зачисление",
+                  "Балл за индивидуальные достижения",
+                  "Сумма конкурсных баллов",
+                  "Форма обучения",
+                  "Возврат документов",
+                  "№ п/п",
+                  "Образовательная программа"]]
+    return(m)
+
+
+def entrant_data_base():
+    m = students[["СНИЛС",
+                  "Право поступления без вступительных испытаний",
+                  "Поступление на места в рамках особой квоты для лиц, имеющих особое право", 
+                  "Поступление на места по целевой квоте",
+                  'Литература',
+                  'Русский язык ЕГЭ',
+                  'Иностранный язык',
+                  'История ЕГЭ',
+                  'Математика ЕГЭ',
+                  'Биология ЕГЭ',
+                  'Химия',
+                  'Обществознание ЕГЭ',
+                  'Творческий конкурс Дизайн',
+                  'Физика',
+                  'География',
+                  'Информатика',
+                  'Творческий конкурс Медиа',
+                  'Творческий конкурс Мода',
+                  'Творческий конкурс I этап',
+                  "Требуется общежитие на время обучения",
+                  ]]
+    return m
 
 
 
@@ -133,44 +179,48 @@ def entrant_data(without_exam, special_q, target_q, ed_progaram, points, operato
 
 
 def Get_SNILS_by_exam(exam, points, operator):
-    m = students[["СНИЛС", exam, "Сумма конкурсных баллов"]] 
-    m = m[~m[exam].isnull()]
-    m = m[m[exam] != ""]
-    try:
-        points = int(points)
-    except ValueError:
-        error_of_int = True
+    if exam in students:
+        m = students[["СНИЛС", exam, "Сумма конкурсных баллов"]] 
+        m = m[~m[exam].isnull()]
+        m = m[m[exam] != ""]
+        m.loc[m[exam] == "", exam] = 0
+        m.loc[:, exam] = m[exam].astype(int)
+        try:
+            points = int(points)
+        except ValueError:
+            error_of_int = True
+        else:
+            error_of_int = False  
+        if error_of_int == False:
+                if operator == '>':
+                    m = m[m[exam] > points]
+                elif operator == '<':
+                    m = m[m[exam] < points]
+                elif operator == '=':
+                    m = m[m[exam] == points]
+                elif operator == '<=':
+                    m = m[m[exam] <= points]
+                elif operator == '>=':
+                    m = m[m[exam] >= points]
+                elif operator == '<>':
+                    m = m[m[exam] != points]
+                elif operator == '<>=':
+                    pass
+                else:
+                    m = m[m[exam] > points] 
+        m.reset_index(inplace = True, drop = True)
+        m = m.sort_values(exam)
+        return m
     else:
-        error_of_int = False  
-    if error_of_int == False:
-            m.loc[m["Сумма конкурсных баллов"] == "", "Сумма конкурсных баллов"] = 0
-            m.loc[:, "Сумма конкурсных баллов"] = m["Сумма конкурсных баллов"].astype(int)
-            if operator == '>':
-                m = m[m["Сумма конкурсных баллов"] > points]
-            elif operator == '<':
-                m = m[m["Сумма конкурсных баллов"] < points]
-            elif operator == '=':
-                m = m[m["Сумма конкурсных баллов"] == points]
-            elif operator == '<=':
-                m = m[m["Сумма конкурсных баллов"] <= points]
-            elif operator == '>=':
-                m = m[m["Сумма конкурсных баллов"] >= points]
-            elif operator == '<>':
-                m = m[m["Сумма конкурсных баллов"] != points]
-            elif operator == '<>=':
-                pass
-            else:
-                m = m[m["Сумма конкурсных баллов"] > points] 
-    m.reset_index(inplace = True, drop = True)
-    return (m)
+        n = pd.DataFrame()
+        return n
 
-    
+
 def Places_for_education(name, budget, paid):
     m = students[["Образовательная программа", "Бюджетные места", "Платные места"]] 
     m = m.drop_duplicates(subset = 'Образовательная программа', keep = 'first')
     m.reset_index(inplace = True, drop = True)
     name = '"' + name + '"'
-    print(name + "$$$$$$$$$$")
     if name in m["Образовательная программа"].values:
         m = m[m["Образовательная программа"] == name]
         if budget == True:
@@ -184,7 +234,6 @@ def Places_for_education(name, budget, paid):
         if paid == True:
             m = m[m["Платные места"] == "0"]
         return (m)
-
     
 
 def quota_program_breakdown():
@@ -194,25 +243,95 @@ def quota_program_breakdown():
                   'Поступление на места по целевой квоте',
                   'Сумма конкурсных баллов','Возврат документов',
                   'Образовательная программа','Бюджетные места',
-                  'Платные места',"История ЕГЭ", "История ЕГЭ",	
-                  "Математика ЕГЭ",	"Биология ЕГЭ",	"Химия",	
-                  "Обществознание ЕГЭ", 	"Творческий конкурс Дизайн",	
-                  "Физика",	"География",	
-                  "Информатика", "Литература",
-                  "Русский язык ЕГЭ",
-                  "Иностранный язык"]]
+                  'Платные места', 
+                  'Литература',
+                  'Русский язык ЕГЭ',
+                  'Иностранный язык',
+                  'История ЕГЭ',
+                  'Математика ЕГЭ',
+                  'Биология ЕГЭ',
+                  'Химия',
+                  'Обществознание ЕГЭ',
+                  'Творческий конкурс Дизайн',
+                  'Физика',
+                  'География',
+                  'Информатика',
+                  'Творческий конкурс Медиа',
+                  'Творческий конкурс Мода',
+                  'Творческий конкурс I этап']]
+
     m = m.loc[m['Заявление о согласии на зачисление'] == '+']
     m = m.loc[m['Право поступления без вступительных испытаний'] == '']
     m = m.loc[m['Возврат документов'] == '-']
     m["Quota"] = np.where((m["Поступление на места по целевой квоте"] == "+")|(m["Поступление на места в рамках особой квоты для лиц, имеющих особое право"] == "+"), "Quota", "No quota")
     m.drop(["Поступление на места по целевой квоте", "Поступление на места в рамках особой квоты для лиц, имеющих особое право", "Право поступления без вступительных испытаний", 'Возврат документов', 'Заявление о согласии на зачисление', "№ п/п", "Бюджетные места", "Платные места", 'Сумма конкурсных баллов'], axis = 1, inplace = True)
-    m = pd.melt(m, id_vars=['Образовательная программа', 'Quota'], value_vars=['История ЕГЭ','История ЕГЭ', 'Математика ЕГЭ', 'Биология ЕГЭ', 'Химия','Обществознание ЕГЭ', 'Творческий конкурс Дизайн', 'Физика','География', 'Информатика', 'Литература', 'Русский язык ЕГЭ','Иностранный язык'])
+    m = pd.melt(m, id_vars=['Образовательная программа', 'Quota'], value_vars=['Литература',
+                                                                               'Русский язык ЕГЭ',
+                                                                               'Иностранный язык',
+                                                                               'История ЕГЭ',
+                                                                               'Математика ЕГЭ',
+                                                                               'Биология ЕГЭ',
+                                                                               'Химия',
+                                                                               'Обществознание ЕГЭ',
+                                                                               'Творческий конкурс Дизайн',
+                                                                               'Физика',
+                                                                               'География',
+                                                                               'Информатика',
+                                                                               'Творческий конкурс Медиа',
+                                                                               'Творческий конкурс Мода',
+                                                                               'Творческий конкурс I этап'])
     m.value[m.value == ""] = 0
     m["value"] = m.value.astype(float)
     n = pd.pivot_table(m, values='value', index=['Образовательная программа', 'Quota'],columns = ['variable'], aggfunc=np.mean)
-    return (n)
-    n.to_excel('D:/VUZD/PythonBD/Example5.xlsx', na_rep='')
+    n.to_excel('./quota_program_breakdown.xlsx', na_rep='')
 
+def quota_program_breakdown_for_treeview():
+    m = students[['№ п/п','Заявление о согласии на зачисление',
+                  'Право поступления без вступительных испытаний',
+                  'Поступление на места в рамках особой квоты для лиц, имеющих особое право',
+                  'Поступление на места по целевой квоте',
+                  'Сумма конкурсных баллов','Возврат документов',
+                  'Образовательная программа','Бюджетные места',
+                  'Платные места',
+                  'Литература',
+                  'Русский язык ЕГЭ',
+                  'Иностранный язык',
+                  'История ЕГЭ',
+                  'Математика ЕГЭ',
+                  'Биология ЕГЭ',
+                  'Химия',
+                  'Обществознание ЕГЭ',
+                  'Творческий конкурс Дизайн',
+                  'Физика',
+                  'География',
+                  'Информатика',
+                  'Творческий конкурс Медиа',
+                  'Творческий конкурс Мода',
+                  'Творческий конкурс I этап']]
+    m = m.loc[m['Заявление о согласии на зачисление'] == '+']
+    m = m.loc[m['Право поступления без вступительных испытаний'] == '']
+    m = m.loc[m['Возврат документов'] == '-']
+    m["Quota"] = np.where((m["Поступление на места по целевой квоте"] == "+")|(m["Поступление на места в рамках особой квоты для лиц, имеющих особое право"] == "+"), "Quota", "No quota")
+    m.drop(["Поступление на места по целевой квоте", "Поступление на места в рамках особой квоты для лиц, имеющих особое право", "Право поступления без вступительных испытаний", 'Возврат документов', 'Заявление о согласии на зачисление', "№ п/п", "Бюджетные места", "Платные места", 'Сумма конкурсных баллов'], axis = 1, inplace = True)
+    m = pd.melt(m, id_vars=['Образовательная программа', 'Quota'], value_vars=['Литература',
+                                                                               'Русский язык ЕГЭ',
+                                                                               'Иностранный язык',
+                                                                               'История ЕГЭ',
+                                                                               'Математика ЕГЭ',
+                                                                               'Биология ЕГЭ',
+                                                                               'Химия',
+                                                                               'Обществознание ЕГЭ',
+                                                                               'Творческий конкурс Дизайн',
+                                                                               'Физика',
+                                                                               'География',
+                                                                               'Информатика',
+                                                                               'Творческий конкурс Медиа',
+                                                                               'Творческий конкурс Мода',
+                                                                               'Творческий конкурс I этап'])
+    m.value[m.value == ""] = 0
+    m["value"] = m.value.astype(float)
+    n = pd.pivot_table(m, values='value', index=['Образовательная программа', 'Quota'], columns = ['variable'], aggfunc=np.mean).reset_index()
+    return(n)
 
 
 def right_program_breakdown():
@@ -221,13 +340,22 @@ def right_program_breakdown():
                   'Поступление на места в рамках особой квоты для лиц, имеющих особое право',
                   'Поступление на места по целевой квоте','Сумма конкурсных баллов',
                   'Возврат документов','Образовательная программа','Бюджетные места',
-                  'Платные места',"История ЕГЭ", "История ЕГЭ",	"Математика ЕГЭ",
-                  "Биология ЕГЭ",	"Химия",
-                  "Обществознание ЕГЭ",
-                  "Творческий конкурс Дизайн",
-                  "Физика",	"География",
-                  "Информатика", "Литература",
-                  "Русский язык ЕГЭ","Иностранный язык"]]
+                  'Платные места',
+                  'Литература',
+                  'Русский язык ЕГЭ',
+                  'Иностранный язык',
+                  'История ЕГЭ',
+                  'Математика ЕГЭ',
+                  'Биология ЕГЭ',
+                  'Химия',
+                  'Обществознание ЕГЭ',
+                  'Творческий конкурс Дизайн',
+                  'Физика',
+                  'География',
+                  'Информатика',
+                  'Творческий конкурс Медиа',
+                  'Творческий конкурс Мода',
+                  'Творческий конкурс I этап']]
     m = m.loc[m['Заявление о согласии на зачисление'] == '+']
     m = m.loc[m['Поступление на места по целевой квоте'] == '-']
     m = m.loc[m['Поступление на места в рамках особой квоты для лиц, имеющих особое право'] == '-']
@@ -242,12 +370,85 @@ def right_program_breakdown():
             "Бюджетные места", 
             "Платные места",
             'Сумма конкурсных баллов'], axis = 1, inplace = True)
-    m = pd.melt(m, id_vars=['Образовательная программа', 'Right_to_no_exams'], value_vars=['История ЕГЭ','История ЕГЭ', 'Математика ЕГЭ', 'Биология ЕГЭ', 'Химия','Обществознание ЕГЭ', 'Творческий конкурс Дизайн', 'Физика','География', 'Информатика', 'Литература', 'Русский язык ЕГЭ','Иностранный язык'])
+    m = pd.melt(m, id_vars=['Образовательная программа', 'Right_to_no_exams'], value_vars=['Литература',
+                                                                                           'Русский язык ЕГЭ',
+                                                                                           'Иностранный язык',
+                                                                                           'История ЕГЭ',
+                                                                                           'Математика ЕГЭ',
+                                                                                           'Биология ЕГЭ',
+                                                                                           'Химия',
+                                                                                           'Обществознание ЕГЭ',
+                                                                                           'Творческий конкурс Дизайн',
+                                                                                           'Физика',
+                                                                                           'География',
+                                                                                           'Информатика',
+                                                                                           'Творческий конкурс Медиа',
+                                                                                           'Творческий конкурс Мода',
+                                                                                           'Творческий конкурс I этап'])
     m.value[m.value == ""] = 0
     m["value"] = m.value.astype(float)
     n = pd.pivot_table(m, values='value', index=['Образовательная программа', 'Right_to_no_exams'],columns = ['variable'], aggfunc=np.mean)
+    n.to_excel('./right_program_breakdown.xlsx', na_rep='')
+
+    
+def right_program_breakdown_for_treeview():
+    m = students[['№ п/п','Заявление о согласии на зачисление',
+                  'Право поступления без вступительных испытаний',
+                  'Поступление на места в рамках особой квоты для лиц, имеющих особое право',
+                  'Поступление на места по целевой квоте','Сумма конкурсных баллов',
+                  'Возврат документов','Образовательная программа','Бюджетные места',
+                  'Платные места',
+                  'Литература',
+                  'Русский язык ЕГЭ',
+                  'Иностранный язык',
+                  'История ЕГЭ',
+                  'Математика ЕГЭ',
+                  'Биология ЕГЭ',
+                  'Химия',
+                  'Обществознание ЕГЭ',
+                  'Творческий конкурс Дизайн',
+                  'Физика',
+                  'География',
+                  'Информатика',
+                  'Творческий конкурс Медиа',
+                  'Творческий конкурс Мода',
+                  'Творческий конкурс I этап']]
+    m = m.loc[m['Заявление о согласии на зачисление'] == '+']
+    m = m.loc[m['Поступление на места по целевой квоте'] == '-']
+    m = m.loc[m['Поступление на места в рамках особой квоты для лиц, имеющих особое право'] == '-']
+    m = m.loc[m['Возврат документов'] == '-']
+    m["Right_to_no_exams"] = np.where((m['Право поступления без вступительных испытаний'] != ""), "No_exams", "No_right")
+    m.drop(["Поступление на места по целевой квоте",
+            "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
+            "Право поступления без вступительных испытаний",
+            'Возврат документов',
+            'Заявление о согласии на зачисление',
+            "№ п/п",
+            "Бюджетные места", 
+            "Платные места",
+            'Сумма конкурсных баллов'], axis = 1, inplace = True)
+    m = pd.melt(m, id_vars=['Образовательная программа', 'Right_to_no_exams'], value_vars=['Литература',
+                                                                                           'Русский язык ЕГЭ',
+                                                                                           'Иностранный язык',
+                                                                                           'История ЕГЭ',
+                                                                                           'Математика ЕГЭ',
+                                                                                           'Биология ЕГЭ',
+                                                                                           'Химия',
+                                                                                           'Обществознание ЕГЭ',
+                                                                                           'Творческий конкурс Дизайн',
+                                                                                           'Физика',
+                                                                                           'География',
+                                                                                           'Информатика',
+                                                                                           'Творческий конкурс Медиа',
+                                                                                           'Творческий конкурс Мода',
+                                                                                           'Творческий конкурс I этап'])
+    m.value[m.value == ""] = 0
+    m["value"] = m.value.astype(float)
+    n = pd.pivot_table(m, values='value', index=['Образовательная программа', 'Right_to_no_exams'],columns = ['variable'], aggfunc=np.mean).reset_index()
     return(n)
-    n.to_excel('D:/VUZD/PythonBD/Example6.xlsx', na_rep='')
+
+
+
 
 
 
@@ -319,31 +520,67 @@ def new_window():
 def bd_programs():
         window = tk.Toplevel()
         window.geometry("1000x1000+100+100")
-        
-        table = ttk.Treeview(window, columns = ("Образовательная программа","Проходной балл","Бюджетные места","Платные места"))
+        style = ttk.Style(window)
+        style.theme_use("clam")
+        def fixed_map(option):
+            return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
+                    elm[:2] != ('!disabled', '!selected')]
+        table = ttk.Treeview(window, columns = ("Образовательная программа","Бюджетные места","Платные места","Проходной балл"))
         table.column('#0',width=0, stretch="no")
         table.column('Образовательная программа', anchor="center", width=120)
-        table.column('Проходной балл', anchor="center", width=120)
         table.column('Бюджетные места', anchor="center", width=120)
         table.column('Платные места', anchor="center", width=120)
+        table.column('Проходной балл', anchor="center", width=120)
         table.heading('#0', text='', anchor="center")
         table.heading('Образовательная программа', text='Образовательная программа', anchor="center")
         table.heading('Проходной балл', text='Проходной балл', anchor="center")
         table.heading('Бюджетные места', text='Бюджетные места', anchor="center")
         table.heading('Платные места', text='Платные места', anchor="center")
+        table.pack(side = "top", fill = "both", expand=True)
+        Obr_program_table = Obr_program_bd()
+        x = 0
+        for i in Obr_program_table.iterrows():
+            rowLabels = Obr_program_table.index.tolist()
+            table.insert('', x, text=rowLabels[x], values=Obr_program_table.iloc[x,:].tolist())
+            x+=1
+        def night_theme():
+            window.config(bg = "#3E3D45")
+            style.map('Treeview', foreground=fixed_map('foreground'),
+                      background=fixed_map('background'))
+            style.configure("Treeview", background="#3E3D45",
+                            fieldbackground="#3E3D45",
+                            foreground="#E1DFEE")
+        def day_theme():
+            window.config(bg = "#f0f0f0")
+            style.map('Treeview', foreground=fixed_map('foreground'),
+                      background=fixed_map('background'))
+            style.configure("Treeview", background="white",
+                            fieldbackground="white",
+                            foreground="black")
+        def save_bd_programs():
+            Obr_program_table.to_excel('./Data_base_educating_program.xlsx', na_rep='')
         
-        table.pack(side = "top")
+        mainmenu = tk.Menu(window, tearoff=0)
+        menu1 = tk.Menu(mainmenu, tearoff=0)
+        menu1.add_command(label = 'Сохранить xlsx', command = save_bd_programs)
+        menu1.add_command(label = 'Тёмная тема', command = night_theme)
+        menu1.add_command(label = 'Светлая тема', command = day_theme)
+        mainmenu.add_cascade(label = "Файл", menu = menu1)
+        mainmenu.add_command(label="Exit", command=window.destroy)
+        window.config(menu=mainmenu)
 
 def bd_za():
         window = tk.Toplevel()
-        window.geometry("1700x1000+100+100")
-        
-        table = ttk.Treeview(window, columns = ("ID","СНИЛС","Согл. на зачисление","Доп. Балл","Сумма баллов",
+        window.geometry("2000x900+0+0")
+        style = ttk.Style(window)
+        style.theme_use("clam")
+        def fixed_map(option):
+            return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
+                    elm[:2] != ('!disabled', '!selected')]
+        table = ttk.Treeview(window, columns = ("СНИЛС","Согл. на зачисление","Доп. Балл","Сумма баллов",
                                                 "Форма обучения","Возврат документов",
-                                                "№ абитуриента","Образовательная программа",
-                                                "Преимуществ. право"))
+                                                "№ абитуриента","Образовательная программа"))
         table.column('#0',width=0, stretch="no")
-        table.column('ID', anchor="center", width=140)
         table.column('СНИЛС', anchor="center", width=140)
         table.column('Согл. на зачисление', anchor="center", width=140)
         table.column('Доп. Балл', anchor="center", width=140)
@@ -352,9 +589,7 @@ def bd_za():
         table.column('Возврат документов', anchor="center", width=140)
         table.column('№ абитуриента', anchor="center", width=140)
         table.column('Образовательная программа', anchor="center", width=140)
-        table.column('Преимуществ. право', anchor="center", width=140)
         table.heading('#0', text='', anchor="center")
-        table.heading('ID', text='ID', anchor="center")
         table.heading('СНИЛС', text='СНИЛС', anchor="center")
         table.heading('Согл. на зачисление', text='Согл. на зачисление', anchor="center")
         table.heading('Доп. Балл', text='Доп. Балл', anchor="center")
@@ -363,52 +598,157 @@ def bd_za():
         table.heading('Возврат документов', text='Возврат документов', anchor="center")
         table.heading('№ абитуриента', text='№ абитуриента', anchor="center")
         table.heading('Образовательная программа', text='Образовательная программа', anchor="center")
-        table.heading('Преимуществ. право', text='Преимуществ. право', anchor="center")
+        table.pack(side = "top", fill = "both", expand=True)
+        zz = zayavlenie_zachislenie()
+        x = 0
+        for i in zz.iterrows():
+            rowLabels =zz.index.tolist()
+            table.insert('', x, text=rowLabels[x], values=zz.iloc[x,:].tolist())
+            x+=1
+        def night_theme():
+            window.config(bg = "#3E3D45")
+            style.map('Treeview', foreground=fixed_map('foreground'),
+                      background=fixed_map('background'))
+            style.configure("Treeview", background="#3E3D45",
+                            fieldbackground="#3E3D45",
+                            foreground="#E1DFEE")
+        def day_theme():
+            window.config(bg = "#f0f0f0")
+            style.map('Treeview', foreground=fixed_map('foreground'),
+                      background=fixed_map('background'))
+            style.configure("Treeview", background="white",
+                            fieldbackground="white",
+                            foreground="black")
+        def save_bd_zz():
+            zz.to_excel('./Data_base_zayavlenia.xlsx', na_rep='')
         
-        table.pack(side = "top")
+        mainmenu = tk.Menu(window, tearoff=0)
+        menu1 = tk.Menu(mainmenu, tearoff=0)
+        menu1.add_command(label = 'Сохранить xlsx', command = save_bd_zz)
+        menu1.add_command(label = 'Тёмная тема', command = night_theme)
+        menu1.add_command(label = 'Светлая тема', command = day_theme)
+        mainmenu.add_cascade(label = "Файл", menu = menu1)
+        mainmenu.add_command(label="Exit", command=window.destroy)
+        window.config(menu=mainmenu)
 
 def bd_entr():
         window = tk.Toplevel()
-        window.geometry("1000x1000+100+100")
-        
-        table = ttk.Treeview(window, columns = ("СНИЛС","Право без испытаний","Особая квота",
-                                                "Целевая квота","Предметы ЕГЭ","Общежитие"))
+        window.geometry("2000x900+0+0")
+        style = ttk.Style(window)
+        style.theme_use("clam")
+        def fixed_map(option):
+            return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
+                    elm[:2] != ('!disabled', '!selected')]
+        table = ttk.Treeview(window, columns = ("СНИЛС",
+                                                "Право без испытаний",
+                                                "Особая квота",
+                                                "Целевая квота",
+                                                'Литература',
+                                                'Русский язык ЕГЭ',
+                                                'Иностранный язык',
+                                                'История ЕГЭ',
+                                                'Математика ЕГЭ',
+                                                'Биология ЕГЭ',
+                                                'Химия',
+                                                'Обществознание ЕГЭ',
+                                                'Творческий конкурс Дизайн',
+                                                'Физика',
+                                                'География',
+                                                'Информатика',
+                                                'Творческий конкурс Медиа',
+                                                'Творческий конкурс Мода',
+                                                'Творческий конкурс I этап',
+                                                "Общежитие"))
         table.column('#0',width=0, stretch="no")
         table.column('СНИЛС', anchor="center", width=140)
         table.column('Право без испытаний', anchor="center", width=140)
         table.column('Особая квота', anchor="center", width=140)
-        table.column('Целевая квота', anchor="center", width=140)
-        table.column('Предметы ЕГЭ', anchor="center", width=140)
+        table.column('Литература', anchor="center", width=80)
+        table.column('Русский язык ЕГЭ', anchor="center", width=80)
+        table.column('Иностранный язык', anchor="center", width=80)
+        table.column('История ЕГЭ', anchor="center", width=80)
+        table.column('Математика ЕГЭ', anchor="center", width=80)
+        table.column('Биология ЕГЭ', anchor="center", width=80)
+        table.column('Химия', anchor="center", width=80)
+        table.column('Обществознание ЕГЭ', anchor="center", width=80)
+        table.column('Творческий конкурс Дизайн', anchor="center", width=80)
+        table.column('Физика', anchor="center", width=80)
+        table.column('География', anchor="center", width=80)
+        table.column('Информатика', anchor="center", width=80)
+        table.column('Творческий конкурс Медиа', anchor="center", width=80)
+        table.column('Творческий конкурс Мода', anchor="center", width=80)
+        table.column('Творческий конкурс I этап', anchor="center", width=80)
         table.column('Общежитие', anchor="center", width=140)
-
         table.heading('#0', text='', anchor="center")
         table.heading('СНИЛС', text='СНИЛС', anchor="center")
         table.heading('Право без испытаний', text='Право без испытаний', anchor="center")
         table.heading('Особая квота', text='Особая квота', anchor="center")
         table.heading('Целевая квота', text='Целевая квота', anchor="center")
-        table.heading('Предметы ЕГЭ', text='Предметы ЕГЭ', anchor="center")
+        table.heading('Литература', text='Литература', anchor="center")
+        table.heading('Русский язык ЕГЭ', text='Русский язык ЕГЭ', anchor="center")
+        table.heading('Иностранный язык', text='Иностранный язык', anchor="center")
+        table.heading('История ЕГЭ', text='История ЕГЭ', anchor="center")
+        table.heading('Математика ЕГЭ', text='Математика ЕГЭ', anchor="center")
+        table.heading('Биология ЕГЭ', text='Биология ЕГЭ', anchor="center")
+        table.heading('Химия', text='Химия', anchor="center")
+        table.heading('Обществознание ЕГЭ', text='Обществознание ЕГЭ', anchor="center")
+        table.heading('Творческий конкурс Дизайн', text='Творческий конкурс Дизайн', anchor="center")
+        table.heading('Физика', text='Физика', anchor="center")
+        table.heading('География', text='География', anchor="center")
+        table.heading('Информатика', text='Информатика', anchor="center")
+        table.heading('Творческий конкурс Медиа', text='Т.к. Медиа', anchor="center")
+        table.heading('Творческий конкурс Мода', text='Т.к. Мода', anchor="center")
+        table.heading('Творческий конкурс I этап', text='Т.к. I этап', anchor="center")
         table.heading('Общежитие', text='Общежитие', anchor="center")
+        table.pack(side = "top", fill = "both", expand=True)
+        entrants = entrant_data_base()
+        x = 0
+        for i in entrants.iterrows():
+            rowLabels =entrants.index.tolist()
+            table.insert('', x, text=rowLabels[x], values=entrants.iloc[x,:].tolist())
+            x+=1
+        def night_theme():
+            window.config(bg = "#3E3D45")
+            style.map('Treeview', foreground=fixed_map('foreground'),
+                      background=fixed_map('background'))
+            style.configure("Treeview", background="#3E3D45",
+                            fieldbackground="#3E3D45",
+                            foreground="#E1DFEE")
+        def day_theme():
+            window.config(bg = "#f0f0f0")
+            style.map('Treeview', foreground=fixed_map('foreground'),
+                      background=fixed_map('background'))
+            style.configure("Treeview", background="white",
+                            fieldbackground="white",
+                            foreground="black")
+        def save_bd_entrants():
+            entrants.to_excel('./Data_base_entrants.xlsx', na_rep='')
         
+        mainmenu = tk.Menu(window, tearoff=0)
+        menu1 = tk.Menu(mainmenu, tearoff=0)
+        menu1.add_command(label = 'Сохранить xlsx', command = save_bd_entrants)
+        menu1.add_command(label = 'Тёмная тема', command = night_theme)
+        menu1.add_command(label = 'Светлая тема', command = day_theme)
+        mainmenu.add_cascade(label = "Файл", menu = menu1)
+        mainmenu.add_command(label="Exit", command=window.destroy)
+        window.config(menu=mainmenu)
         table.pack(side = "top")
 
 
 def get_snils():
     window = tk.Toplevel()
     window.geometry("1000x900+900+100")
-    m = pd.DataFrame()
     style = ttk.Style(window)
     style.theme_use("clam")
     def fixed_map(option):
         return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
                 elm[:2] != ('!disabled', '!selected')]
-    table = ttk.Treeview(window, columns = ("N","SNILS","Exam name", "points"))
+    table = ttk.Treeview(window, columns = ("SNILS","Exam name", "points"))
     table.column('#0',width=0, stretch="no")
-    table.column('N', anchor="center", width=80)
     table.column('SNILS', anchor="center", width=80)
     table.column('Exam name', anchor="center", width=120)
     table.column('points', anchor="center", width=120)
     table.heading('#0', text='', anchor="center")
-    table.heading('N', text='№ студента', anchor="center")
     table.heading('SNILS', text='СНИЛС', anchor="center")
     table.heading('Exam name', text='Экзамен', anchor="center")
     table.heading('points', text='Сумма баллов', anchor="center")
@@ -468,8 +808,8 @@ def get_snils():
             operator = operator + '>'
         if equally_var.get() == True:
             operator = operator + '='
-        m = entrant_data(ed_progaram_var.get(), points_var.get(), operator)
-        m.to_excel('D:/VUZD/PythonBD/Get_snils.xlsx', na_rep='')
+        m = entrant_data(exam_var.get(), points_var.get(), operator)
+        m.to_excel('./Get_snils.xlsx', na_rep='')
         
     left = tk.Frame(window)
     left.pack(side="left")
@@ -527,7 +867,7 @@ def get_snils():
         little_var.set(False)
         equally_var.set(False)
         points_var.set("Enter the number of points")
-        ed_progaram_var.set("Enter the name of the exam")
+        exam_var.set("Enter the name of the exam")
     
     clear = tk.Button(left, text = "Очистить выбор", font = ("Times",10),  background = "white", command = clear_input)
     clear.pack(side = "top")
@@ -554,113 +894,20 @@ def places():
     window = tk.Toplevel()
     window.geometry("1000x900+900+100")
     
-    m = pd.DataFrame()
-    style = ttk.Style(window)
-    style.theme_use("clam")
-    def fixed_map(option):
-        return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
-                elm[:2] != ('!disabled', '!selected')]
-        
-    table = ttk.Treeview(window, columns = ("Образовательная программа","Бюджетные места","Платные места"))
-    table.column('#0',width=0, stretch="no")
-    table.column('Образовательная программа', anchor="center", width=120)
-    table.column('Бюджетные места', anchor="center", width=120)
-    table.column('Платные места', anchor="center", width=120)
-    table.heading('#0', text='', anchor="center")
-    table.heading('Образовательная программа', text='Образовательная программа', anchor="center")
-    table.heading('Бюджетные места', text='Бюджетные места', anchor="center")
-    table.heading('Платные места', text='Платные места', anchor="center")
-    table.pack(side = "right", fill = "both", expand=True)
-    
-    def night_theme():
-        window.config(bg = "#3E3D45")
-        left.config(bg = "#3E3D45")
-        paid.config(bg = "#3E3D45", fg = "#E1DFEE")
-        budget.config(bg = "#3E3D45", fg = "#E1DFEE")
-        clear.config(bg = "#3E3D45", fg = "#E1DFEE")
-        start.config(bg = "#3E3D45", fg = "#E1DFEE")
-        subscribe.config(bg = "#3E3D45", fg = "#E1DFEE")
-        style.map('Treeview', foreground=fixed_map('foreground'),
-                  background=fixed_map('background'))
-        style.configure("Treeview", background="#3E3D45",
-                        fieldbackground="#3E3D45",
-                        foreground="#E1DFEE")  
-    def day_theme():
-        window.config(bg = "#f0f0f0")
-        left.config(bg = "#f0f0f0")
-        paid.config(bg = "#3E3D45", fg = "#E1DFEE")
-        budget.config(bg = "#3E3D45", fg = "#E1DFEE")
-        clear.config(bg = "#f0f0f0", fg = "#000000")
-        start.config(bg = "#f0f0f0", fg = "#000000")
-        subscribe.config(bg = "#f0f0f0", fg = "#000000")
-        style.map('Treeview', foreground=fixed_map('foreground'),
-                  background=fixed_map('background'))
-        style.configure("Treeview", background="white",
-                        fieldbackground="white",
-                        foreground="black")    
-    def places_create_table():
-        table.delete(*table.get_children())
-        m = Places_for_education(ed_progaram_var.get(), budget_var.get(), paid_var.get())
-        x = 0
-        for i in m.iterrows():
-            rowLabels = m.index.tolist()
-            table.insert('', x, text=rowLabels[x], values=m.iloc[x,:].tolist())
-            x+=1
-            
-    def save_xlsx_places():
-        m = Places_for_education(ed_progaram_var.get(), budget_var.get(), paid_var.get())
-        x = 0
-        m.to_excel('D:/VUZD/PythonBD/Places.xlsx', na_rep='')
-    
-    mainmenu = tk.Menu(window, tearoff=0)
-    menu1 = tk.Menu(mainmenu, tearoff=0)
-    menu1.add_command(label = 'Сохранить xlsx', command = save_xlsx_places)
-    menu1.add_command(label = 'Тёмная тема', command = night_theme)
-    menu1.add_command(label = 'Светлая тема', command = day_theme)
-    mainmenu.add_cascade(label = "Файл", menu = menu1)
-    mainmenu.add_command(label="Exit", command=window.destroy)
-    window.config(menu=mainmenu)
-        
-        
     left = tk.Frame(window)
     left.pack(side="left")
     
-    
-    ed_progaram_var = tk.StringVar()
-    ed_progaram_var.set("Enter the name of the education programm")
-    name = tk.Entry(left, width = 35, font = ("Times",20), textvariable = ed_progaram_var)
+    name = tk.Entry(left, width = 40, font = ("Times",20))
+    name.insert("0","Enter the name of the education programm or 'all'")
     name.pack(side = "top")
     
-    budget_var = tk.BooleanVar()
-    budget_var.set(False)
-    budget = tk.Checkbutton(left,
-                            text = "Убрать обр.программы с бюджетными местами",
-                            font = ("Times",20),
-                            variable = budget_var,
-                            onvalue = True,
-                            offvalue = False)
+    budget = tk.Checkbutton(left, text = "Убрать обр.программы с бюджетными местами", font = ("Times",20))
     budget.pack(side = "top")
     
-    
-    paid_var = tk.BooleanVar()
-    paid_var.set(False)
-    paid = tk.Checkbutton(left,
-                            text = "Убрать обр.программы с платными местами",
-                            font = ("Times",20),
-                            variable = paid_var,
-                            onvalue = True,
-                            offvalue = False)
+    paid = tk.Checkbutton(left, text = "Убрать обр.программы с платными местами", font = ("Times",20))
     paid.pack(side = "top")
     
-    def clear_input():
-        budget_var.set(False)
-        paid_var.set(False)
-        ed_progaram_var.set("Enter the name of the education programm")
-    
-    clear = tk.Button(left, text = "Очистить выбор", font = ("Times",10),  background = "white", command = clear_input)
-    clear.pack(side = "top")
-
-    start = tk.Button(left, text = "Start", font = ("Times",10),  background = "white", command = places_create_table)
+    start = tk.Button(left, text = "Start", font = ("Lucida Handwriting",10),  background = "white")
     start.pack(side = "top")
 
     
@@ -672,7 +919,18 @@ def places():
     #" "
     subscribe = tk.Label(left, text = message, font = ("Lucida Handwriting",15))
     subscribe.pack(side = "top")
-
+    
+    table = ttk.Treeview(window, columns = ("Образовательная программа","Бюджетные места","Платные места"))
+    table.column('#0',width=0, stretch="no")
+    table.column('Образовательная программа', anchor="center", width=120)
+    table.column('Бюджетные места', anchor="center", width=120)
+    table.column('Платные места', anchor="center", width=120)
+    table.heading('#0', text='', anchor="center")
+    table.heading('Образовательная программа', text='Образовательная программа', anchor="center")
+    table.heading('Бюджетные места', text='Бюджетные места', anchor="center")
+    table.heading('Платные места', text='Платные места', anchor="center")
+    
+    table.pack(side = "top")
 
 
 
@@ -796,7 +1054,7 @@ def Entrant_data():
                          ed_progaram_var.get(),
                          points_var.get(),
                          operator)
-        m.to_excel('D:/VUZD/PythonBD/Entrant_data.xlsx', na_rep='')
+        m.to_excel('./Entrant_data.xlsx', na_rep='')
     
     mainmenu = tk.Menu(window, tearoff=0)
     menu1 = tk.Menu(mainmenu, tearoff=0)
@@ -926,7 +1184,103 @@ def Entrant_data():
 
 def quota():
     window = tk.Toplevel()
-    window.geometry("2000x900+0+100")
+    window.geometry("2000x900+0+0")
+    
+    style = ttk.Style(window)
+    style.theme_use("clam")
+    def fixed_map(option):
+        return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
+                elm[:2] != ('!disabled', '!selected')]
+    
+    def night_theme():
+        window.config(bg = "#3E3D45")
+        left.config(bg = "#3E3D45")
+        subscribe.config(bg = "#3E3D45", fg = "#E1DFEE")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="#3E3D45",
+                        fieldbackground="#3E3D45",
+                        foreground="#E1DFEE")
+        
+    def day_theme():
+        window.config(bg = "#f0f0f0")
+        left.config(bg = "#f0f0f0")
+        subscribe.config(bg = "#f0f0f0", fg = "#000000")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="white",
+                        fieldbackground="white",
+                        foreground="black")
+                
+    mainmenu = tk.Menu(window, tearoff=0)
+    menu1 = tk.Menu(mainmenu, tearoff=0)
+    menu1.add_command(label = 'Сохранить xlsx', command = quota_program_breakdown)
+    menu1.add_command(label = 'Тёмная тема', command = night_theme)
+    menu1.add_command(label = 'Светлая тема', command = day_theme)
+    mainmenu.add_cascade(label = "Файл", menu = menu1)
+    mainmenu.add_command(label="Exit", command=window.destroy)
+    window.config(menu=mainmenu)
+    
+    table = ttk.Treeview(window, columns = ("Программа",
+                                            "Квота",
+                                            'Литература',
+                                            'Русский язык ЕГЭ',
+                                            'Иностранный язык',
+                                            'История ЕГЭ',
+                                            'Математика ЕГЭ',
+                                            'Биология ЕГЭ',
+                                            'Химия',
+                                            'Обществознание ЕГЭ',
+                                            'Творческий конкурс Дизайн',
+                                            'Физика',
+                                            'География',
+                                            'Информатика',
+                                            'Творческий конкурс Медиа',
+                                            'Творческий конкурс Мода',
+                                            'Творческий конкурс I этап'))
+    table.column('#0',width=0, stretch="no")
+    table.column('Программа', anchor="center", width=120)
+    table.column('Квота', anchor="center", width=80)
+    table.column('Литература', anchor="center", width=80)
+    table.column('Русский язык ЕГЭ', anchor="center", width=80)
+    table.column('Иностранный язык', anchor="center", width=80)
+    table.column('История ЕГЭ', anchor="center", width=80)
+    table.column('Математика ЕГЭ', anchor="center", width=80)
+    table.column('Биология ЕГЭ', anchor="center", width=80)
+    table.column('Химия', anchor="center", width=80)
+    table.column('Обществознание ЕГЭ', anchor="center", width=80)
+    table.column('Творческий конкурс Дизайн', anchor="center", width=80)
+    table.column('Физика', anchor="center", width=80)
+    table.column('География', anchor="center", width=80)
+    table.column('Информатика', anchor="center", width=80)
+    table.column('Творческий конкурс Медиа', anchor="center", width=80)
+    table.column('Творческий конкурс Мода', anchor="center", width=80)
+    table.column('Творческий конкурс I этап', anchor="center", width=80)
+    table.heading('#0', text='', anchor="center")
+    table.heading('Программа', text='Программа', anchor="center")
+    table.heading('Квота', text='Есть квота', anchor="center")
+    table.heading('Литература', text='Литература', anchor="center")
+    table.heading('Русский язык ЕГЭ', text='Русский язык ЕГЭ', anchor="center")
+    table.heading('Иностранный язык', text='Иностранный язык', anchor="center")
+    table.heading('История ЕГЭ', text='История ЕГЭ', anchor="center")
+    table.heading('Математика ЕГЭ', text='Математика ЕГЭ', anchor="center")
+    table.heading('Биология ЕГЭ', text='Биология ЕГЭ', anchor="center")
+    table.heading('Химия', text='Химия', anchor="center")
+    table.heading('Обществознание ЕГЭ', text='Обществознание ЕГЭ', anchor="center")
+    table.heading('Творческий конкурс Дизайн', text='Творческий конкурс Дизайн', anchor="center")
+    table.heading('Физика', text='Физика', anchor="center")
+    table.heading('География', text='География', anchor="center")
+    table.heading('Информатика', text='Информатика', anchor="center")
+    table.heading('Творческий конкурс Медиа', text='Т.к. Медиа', anchor="center")
+    table.heading('Творческий конкурс Мода', text='Т.к. Мода', anchor="center")
+    table.heading('Творческий конкурс I этап', text='Т.к. I этап', anchor="center")
+    table.pack(side = "right", fill = "both", expand=True)
+    m = quota_program_breakdown_for_treeview()
+    x = 0
+    for i in m.iterrows():
+        rowLabels = m.index.tolist()
+        table.insert('', x, text=rowLabels[x], values=m.iloc[x,:].tolist())
+        x+=1
     
     left = tk.Frame(window)
     left.pack(side="left")
@@ -938,34 +1292,121 @@ def quota():
     Причём рассматриваются только те абитуриенты, 
     которые подали согласие на зачисление 
     и не вернули документы.
-    (По идее, количество с толбцов увеличится.
-     Будет весь список предметов ЕГЭ.)
     """
     #" "
     subscribe = tk.Label(left, text = message, font = ("Lucida Handwriting",15))
     subscribe.pack(side = "top")
     
-    table = ttk.Treeview(window, columns = ("Программа","Есть квота","Без квоты","Биология"))
-    table.column('#0',width=0, stretch="no")
-    table.column('Программа', anchor="center", width=80)
-    table.column('Есть квота', anchor="center", width=80)
-    table.column('Без квоты', anchor="center", width=80)
-    table.column('Биология', anchor="center", width=120)
-    table.heading('#0', text='', anchor="center")
-    table.heading('Программа', text='Программа', anchor="center")
-    table.heading('Есть квота', text='Есть квота', anchor="center")
-    table.heading('Без квоты', text='Без квоты', anchor="center")
-    table.heading('Биология', text='Биология', anchor="center")
-
-    table.pack(side = "left")
+  
+        
+        
+        
+        
+        
+        
 
 def without_exams():
     window = tk.Toplevel()
-    window.geometry("2000x900+0+100")
+    window.geometry("2000x900+0+0")
+    
+    style = ttk.Style(window)
+    style.theme_use("clam")
+    def fixed_map(option):
+        return [elm for elm in style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
+                elm[:2] != ('!disabled', '!selected')]
+    
+    def night_theme():
+        window.config(bg = "#3E3D45")
+        left.config(bg = "#3E3D45")
+        subscribe.config(bg = "#3E3D45", fg = "#E1DFEE")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="#3E3D45",
+                        fieldbackground="#3E3D45",
+                        foreground="#E1DFEE")
+        
+    def day_theme():
+        window.config(bg = "#f0f0f0")
+        left.config(bg = "#f0f0f0")
+        subscribe.config(bg = "#f0f0f0", fg = "#000000")
+        style.map('Treeview', foreground=fixed_map('foreground'),
+                  background=fixed_map('background'))
+        style.configure("Treeview", background="white",
+                        fieldbackground="white",
+                        foreground="black")
+                
+    mainmenu = tk.Menu(window, tearoff=0)
+    menu1 = tk.Menu(mainmenu, tearoff=0)
+    menu1.add_command(label = 'Сохранить xlsx', command = right_program_breakdown)
+    menu1.add_command(label = 'Тёмная тема', command = night_theme)
+    menu1.add_command(label = 'Светлая тема', command = day_theme)
+    mainmenu.add_cascade(label = "Файл", menu = menu1)
+    mainmenu.add_command(label="Exit", command=window.destroy)
+    window.config(menu=mainmenu)
+    
+    table = ttk.Treeview(window, columns = ("Программа",
+                                            "Квота",
+                                            'Литература',
+                                            'Русский язык ЕГЭ',
+                                            'Иностранный язык',
+                                            'История ЕГЭ',
+                                            'Математика ЕГЭ',
+                                            'Биология ЕГЭ',
+                                            'Химия',
+                                            'Обществознание ЕГЭ',
+                                            'Творческий конкурс Дизайн',
+                                            'Физика',
+                                            'География',
+                                            'Информатика',
+                                            'Творческий конкурс Медиа',
+                                            'Творческий конкурс Мода',
+                                            'Творческий конкурс I этап'))
+    table.column('#0',width=0, stretch="no")
+    table.column('Программа', anchor="center", width=120)
+    table.column('Квота', anchor="center", width=80)
+    table.column('Литература', anchor="center", width=80)
+    table.column('Русский язык ЕГЭ', anchor="center", width=80)
+    table.column('Иностранный язык', anchor="center", width=80)
+    table.column('История ЕГЭ', anchor="center", width=80)
+    table.column('Математика ЕГЭ', anchor="center", width=80)
+    table.column('Биология ЕГЭ', anchor="center", width=80)
+    table.column('Химия', anchor="center", width=80)
+    table.column('Обществознание ЕГЭ', anchor="center", width=80)
+    table.column('Творческий конкурс Дизайн', anchor="center", width=80)
+    table.column('Физика', anchor="center", width=80)
+    table.column('География', anchor="center", width=80)
+    table.column('Информатика', anchor="center", width=80)
+    table.column('Творческий конкурс Медиа', anchor="center", width=80)
+    table.column('Творческий конкурс Мода', anchor="center", width=80)
+    table.column('Творческий конкурс I этап', anchor="center", width=80)
+    table.heading('#0', text='', anchor="center")
+    table.heading('Программа', text='Программа', anchor="center")
+    table.heading('Квота', text='Есть квота', anchor="center")
+    table.heading('Литература', text='Литература', anchor="center")
+    table.heading('Русский язык ЕГЭ', text='Русский язык ЕГЭ', anchor="center")
+    table.heading('Иностранный язык', text='Иностранный язык', anchor="center")
+    table.heading('История ЕГЭ', text='История ЕГЭ', anchor="center")
+    table.heading('Математика ЕГЭ', text='Математика ЕГЭ', anchor="center")
+    table.heading('Биология ЕГЭ', text='Биология ЕГЭ', anchor="center")
+    table.heading('Химия', text='Химия', anchor="center")
+    table.heading('Обществознание ЕГЭ', text='Обществознание ЕГЭ', anchor="center")
+    table.heading('Творческий конкурс Дизайн', text='Творческий конкурс Дизайн', anchor="center")
+    table.heading('Физика', text='Физика', anchor="center")
+    table.heading('География', text='География', anchor="center")
+    table.heading('Информатика', text='Информатика', anchor="center")
+    table.heading('Творческий конкурс Медиа', text='Т.к. Медиа', anchor="center")
+    table.heading('Творческий конкурс Мода', text='Т.к. Мода', anchor="center")
+    table.heading('Творческий конкурс I этап', text='Т.к. I этап', anchor="center")
+    table.pack(side = "right", fill = "both", expand=True)
+    m = right_program_breakdown_for_treeview()
+    x = 0
+    for i in m.iterrows():
+        rowLabels = m.index.tolist()
+        table.insert('', x, text=rowLabels[x], values=m.iloc[x,:].tolist())
+        x+=1
     
     left = tk.Frame(window)
     left.pack(side="left")
-
     
     message = """
     Данная функция позволяет пользователю 
@@ -975,26 +1416,10 @@ def without_exams():
     Причём рассматриваются только те абитуриенты, 
     которые подали согласие на зачисление 
     и не вернули документы.
-    (По идее, количество столбцов увеличится.
-     Будет весь список предметов ЕГЭ.)
     """
     #" "
     subscribe = tk.Label(left, text = message, font = ("Lucida Handwriting",15))
     subscribe.pack(side = "top")
-    
-    table = ttk.Treeview(window, columns = ("Программа","Без экзаменов","С экзаменами","Биология"))
-    table.column('#0',width=0, stretch="no")
-    table.column('Программа', anchor="center", width=80)
-    table.column('Без экзаменов', anchor="center", width=80)
-    table.column('С экзаменами', anchor="center", width=80)
-    table.column('Биология', anchor="center", width=120)
-    table.heading('#0', text='', anchor="center")
-    table.heading('Программа', text='Программа', anchor="center")
-    table.heading('Без экзаменов', text='Без экзаменов', anchor="center")
-    table.heading('С экзаменами', text='С экзаменами', anchor="center")
-    table.heading('Биология', text='Биология', anchor="center")
-
-    table.pack(side = "left")
 
 
 
@@ -1028,5 +1453,4 @@ but.pack(side = "bottom")
 
 
 root.mainloop()
-
 
