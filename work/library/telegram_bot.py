@@ -56,21 +56,26 @@ def create_telegram_bot():
 
     def get_SNILS(message):
         global SNILS
+        flag = False
         SNILS = message.text
         while not is_SNILS_exist():
             bot.reply_to(message, "Ваш СНИЛС отсутствует в списке поступающих")
             get_google_sheets(message)
             break
-        if is_SNILS_exist():
+        if is_SNILS_exist() and not flag:
+            flag = True
             bot.send_message(message.from_user.id, "Хотите добавить автопроверку на изменение вас в списке поступающих?")
             bot.register_next_step_handler(message, set_configuration)
 
     def set_configuration(message):
         if message.text.strip().lower() == 'да':
-            bot.send_message(message.from_user.id, "К сожалению, данная опция еще в разработке")
         bot.send_message(message.from_user.id, f"Ваш СНИЛС: {SNILS}")
         bot.send_message(message.from_user.id, "Бот заработал")
 
+
+    @bot.message_handler(commands='update')
+    def get_update(message):
+        pass
 
 
     @bot.message_handler(func=lambda x: True)
@@ -112,7 +117,43 @@ def set_telegram_params_work(auto_update=False):
     P.s. По умолчанию параметр равен False.
     :return: None
     '''
-    pass
+    if auto_update:
+        time = get_update_interval()
+
+
+
+def get_update_interval():
+    while True:
+        interval = input("Укажите интервал обновления информации в часах/минутах(пример: 1.5ч; 10мин): ")
+        try:
+            if interval[-1] == 'ч':
+                time = interval[:-1]
+                if time.find('.') != -1:
+                    time = str(float(time))
+                    if set(time.split('.')) == {'0'}:
+                        time = 0
+                    else:
+                        time = float(time) * 60
+                else:
+                    time = int(time) * 60
+            elif interval[-3:] == 'мин':
+                time = interval[:-3]
+                if time.find('.') != -1:
+                    time = str(float(time))
+                    if set(time.split('.')) == {'0'}:
+                        time = 0
+                    else:
+                        time = float(time)
+                else:
+                    time = int(time)
+            if time == 0:
+                raise
+            time = round(time * 60)
+            break
+        except:
+            print("Неправильный формат данных.\n")
+
+    return time
 
 
 def work_telegram_bot():
