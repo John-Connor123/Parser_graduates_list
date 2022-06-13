@@ -10,6 +10,10 @@ import tkinter as tk
 from PIL import ImageTk, Image
 from tkinter import ttk
 
+from work.library.telegram_bot import parse_website_link
+
+#parse_website_link("https://vk.com/away.php?to=https%3A%2F%2Fdocs.google.com%2Fspreadsheets%2Fd%2F11Wci2MHaXvGuokesyxOOcIh_JBT6wH78Zu64pxaPZp8%2Fedit%23gid%3D1109409760&cc_key=")
+
 def get_data(my_path):
     """
     :param my_path: путь к папке стаблицами
