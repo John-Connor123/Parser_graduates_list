@@ -179,5 +179,3 @@ def work_telegram_bot():
     # bot.polling()
 
 
-# work_telegram_bot()
-create_telegram_bot()
