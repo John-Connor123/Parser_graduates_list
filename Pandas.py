@@ -190,7 +190,7 @@ def To_Bot(SNILS):
                 desired_values.append("+")
             else: 
                 desired_values.append("-")
-    only_me_df.loc[:, "NewValue"] = desired_values
+    only_me_df.loc[:, "get_budget_place"] = desired_values
     only_me_dict = only_me_df.T.to_dict()
     only_me_dict = list(only_me_dict.values())
     return(only_me_dict)
