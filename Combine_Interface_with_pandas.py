@@ -13,37 +13,6 @@ from tkinter import ttk
 from work.library.telegram_bot import parse_website_link
 bot_or_pril = "-1"
 
-def To_Bot(SNILS):
-    students = pd.read_excel(f'{os.getcwd()}\\students.xlsx')
-    all_students_df = students[["№ п/п", "СНИЛС", "Право поступления без вступительных испытаний",
-                                "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
-                                "Поступление на места по целевой квоте", "Образовательная программа",
-                                "Сумма конкурсных баллов", "Заявление о согласии на зачисление", "Бюджетные места"]]
-    only_me_df = all_students_df.loc[all_students_df["СНИЛС"] == SNILS]
-    desired_values = []
-    for program_name, budget_places in zip(only_me_df["Образовательная программа"].tolist(),
-                                           only_me_df["Бюджетные места"].tolist()):
-        me_in_this_program = all_students_df[
-            (all_students_df["Образовательная программа"] == program_name) & (all_students_df["СНИЛС"] == SNILS)]
-        if me_in_this_program["Заявление о согласии на зачисление"].values[0] == "-":
-            desired_values.append("-")
-            only_me_df.loc[:, "my_place"] = "-1"
-        else:
-            one_prog_students_df = all_students_df[(all_students_df["Образовательная программа"] == program_name)]
-            agreed_one_prog_students_df = one_prog_students_df[
-                one_prog_students_df["Заявление о согласии на зачисление"] == "+"]
-            agreed_one_prog_students_df.reset_index(inplace=True, drop=True)
-            my_number = agreed_one_prog_students_df[agreed_one_prog_students_df["СНИЛС"] == SNILS].index[0]
-            if int(budget_places) - int(my_number) >= 0:
-                desired_values.append("+")
-            else:
-                desired_values.append("-")
-            only_me_df.loc[:, "my_place"] = my_number
-    only_me_df.loc[:, "get_budget_place"] = desired_values
-    only_me_dict = only_me_df.T.to_dict()
-    only_me_dict = list(only_me_dict.values())
-    return (only_me_dict)
-
 
 def start_menu():
     global bot_or_pril

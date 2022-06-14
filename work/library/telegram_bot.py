@@ -82,7 +82,6 @@ def create_telegram_bot():
         for element in dicts_list_to_bot:
             output_message = f'''
             ОП: {element['Образовательная программа']}
-            Ваше место в списке: 1
             Количество бюджетных мест: {element['Бюджетные места']}
             Проходите ли вы: {'Да' if element['get_budget_place'] == '+' else 'Нет'}
             '''
@@ -159,6 +158,7 @@ def To_Bot(SNILS):
             (all_students_df["Образовательная программа"] == program_name) & (all_students_df["СНИЛС"] == SNILS)]
         if me_in_this_program["Заявление о согласии на зачисление"].values[0] == "-":
             desired_values.append("-")
+            only_me_df.loc[:, "my_place"] = "-1"
         else:
             one_prog_students_df = all_students_df[(all_students_df["Образовательная программа"] == program_name)]
             agreed_one_prog_students_df = one_prog_students_df[
@@ -169,6 +169,7 @@ def To_Bot(SNILS):
                 desired_values.append("+")
             else:
                 desired_values.append("-")
+            only_me_df.loc[:, "my_place"] = my_number
     only_me_df.loc[:, "get_budget_place"] = desired_values
     only_me_dict = only_me_df.T.to_dict()
     only_me_dict = list(only_me_dict.values())
