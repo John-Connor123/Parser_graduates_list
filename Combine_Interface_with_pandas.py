@@ -9,58 +9,92 @@ import numpy as np
 import tkinter as tk
 from PIL import ImageTk, Image
 from tkinter import ttk
-
 from work.library.telegram_bot import parse_website_link
+bot_or_pril = True
 
-preview_window = tk.Tk()
-preview_window.title("Начало.")
-preview_window.geometry("800x400+600+100")
 
-def pril():
+def To_Bot(SNILS):
+    students = pd.read_excel(f'{os.getcwd()}\\work\\library\\students.xlsx')
+    all_students_df = students[["№ п/п", "СНИЛС", "Право поступления без вступительных испытаний",
+                                "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
+                                "Поступление на места по целевой квоте", "Образовательная программа",
+                                "Сумма конкурсных баллов", "Заявление о согласии на зачисление", "Бюджетные места"]]
+    only_me_df = all_students_df.loc[all_students_df["СНИЛС"] == SNILS]
+    desired_values = []
+    for program_name, budget_places in zip(only_me_df["Образовательная программа"].tolist(),
+                                           only_me_df["Бюджетные места"].tolist()):
+        me_in_this_program = all_students_df[
+            (all_students_df["Образовательная программа"] == program_name) & (all_students_df["СНИЛС"] == SNILS)]
+        if me_in_this_program["Заявление о согласии на зачисление"].values[0] == "-":
+            desired_values.append("-")
+        else:
+            one_prog_students_df = all_students_df[(all_students_df["Образовательная программа"] == program_name)]
+            agreed_one_prog_students_df = one_prog_students_df[
+                one_prog_students_df["Заявление о согласии на зачисление"] == "+"]
+            agreed_one_prog_students_df.reset_index(inplace=True, drop=True)
+            my_number = agreed_one_prog_students_df[agreed_one_prog_students_df["СНИЛС"] == SNILS].index[0]
+            if int(budget_places) - int(my_number) >= 0:
+                desired_values.append("+")
+            else:
+                desired_values.append("-")
+    only_me_df.loc[:, "get_budget_place"] = desired_values
+    only_me_dict = only_me_df.T.to_dict()
+    only_me_dict = list(only_me_dict.values())
+    return (only_me_dict)
+
+
+def start_menu():
     global bot_or_pril
-    bot_or_pril = True
-    preview_window.destroy()
+    preview_window = tk.Tk()
+    preview_window.title("Начало.")
+    preview_window.geometry("800x400+600+100")
+
+    def pril():
+        global bot_or_pril
+        bot_or_pril = True
+        preview_window.destroy()
 
 
-def bot():
-    global bot_or_pril
-    bot_or_pril = False
-    preview_window.destroy()
+    def bot():
+        global bot_or_pril
+        bot_or_pril = False
+        preview_window.destroy()
 
 
-but_bot = tk.Button(preview_window, text="Использовать телеграм-бота", font=("Times", 20), background="white",
-                    command=bot)
-but_bot.pack(side="top")
+    but_bot = tk.Button(preview_window, text="Использовать телеграм-бота", font=("Times", 20), background="white",
+                        command=bot)
+    but_bot.pack(side="top")
 
-but_pril = tk.Button(preview_window, text="Использовать приложение", font=("Times", 20), background="white",
-                     command=pril)
-but_pril.pack(side="top")
+    but_pril = tk.Button(preview_window, text="Использовать приложение", font=("Times", 20), background="white",
+                         command=pril)
+    but_pril.pack(side="top")
 
-message = """
-Ваше высочество, вам предстоит выбрать
-в каком формате вы хотите работать с данным ПО.
-Если вам требуются общая статистика и анализ,
-то используйте приложение на компьютере.
-Если вы хотите мобильно узнать свою стаистику,
-то выберите телеграм-бота.
-"""
-lab = tk.Label(preview_window, text=message, font=("Times", 20))
-lab.pack(side="bottom")
+    message = """
+    Ваше высочество, вам предстоит выбрать
+    в каком формате вы хотите работать с данным ПО.
+    Если вам требуются общая статистика и анализ,
+    то используйте приложение на компьютере.
+    Если вы хотите мобильно узнать свою стаистику,
+    то выберите телеграм-бота.
+    """
+    lab = tk.Label(preview_window, text=message, font=("Times", 20))
+    lab.pack(side="bottom")
 
-preview_window.mainloop()
+    preview_window.mainloop()
 
-if bot_or_pril == False:
+
+def info_telegram_bot():
     bot_window = tk.Tk()
     bot_window.geometry("1700x900+100+50")
     bot_window.title("бот")
-    lab = tk.Label(bot_window, text="@ParserstatsHSEbot", font = ("Times", 50), fg = 'blue')
+    lab = tk.Label(bot_window, text="@ParserstatsHSEbot", font=("Times", 50), fg='blue')
     lab.pack(side="top")
     path4 = "telega.png"
     img4 = Image.open(path4)
-    img4 = img4.resize((700,550), Image.Resampling.LANCZOS)
+    img4 = img4.resize((700, 550), Image.Resampling.LANCZOS)
     img4 = ImageTk.PhotoImage(img4)
-    panelka = tk.Label(bot_window, image = img4, cursor = "pirate")
-    panelka.pack(side = "top", fill = "both", expand = "yes")
+    panelka = tk.Label(bot_window, image=img4, cursor="pirate")
+    panelka.pack(side="top", fill="both", expand="yes")
 
     message = """
     Ваше высочество, перед вами окно телеграм-бота.
@@ -69,11 +103,12 @@ if bot_or_pril == False:
     пока используете телеграмм-бота.
     Спасибо.
     """
-    lab = tk.Label(bot_window, text=message, font = ("Times", 30))
+    lab = tk.Label(bot_window, text=message, font=("Times", 30))
     lab.pack(side="bottom")
     bot_window.mainloop()
 
-if bot_or_pril == True:
+
+def run_app():
     def get_data(my_path):
         """
         :param my_path: путь к папке стаблицами
@@ -189,7 +224,8 @@ if bot_or_pril == True:
     def get_link_from_user():
         global students
         try:
-            students = parse_website_link(link_var.get())
+            parse_website_link(link_var.get())
+            students = pd.read_excel(f'{os.getcwd()}\\work\\library\\students.xlsx')
             start_window.destroy()
         except:
             link_var.set("Некорректная ссылка")
@@ -641,34 +677,6 @@ if bot_or_pril == True:
         return (n)
 
 
-    def To_Bot(SNILS):
-        all_students_df = students[["№ п/п", "СНИЛС", "Право поступления без вступительных испытаний",
-                                    "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
-                                    "Поступление на места по целевой квоте", "Образовательная программа",
-                                    "Сумма конкурсных баллов", "Заявление о согласии на зачисление", "Бюджетные места"]]
-        only_me_df = all_students_df.loc[all_students_df["СНИЛС"] == SNILS]
-
-        desired_values = []
-        for program_name, budget_places in zip(only_me_df["Образовательная программа"].tolist(),
-                                               only_me_df["Бюджетные места"].tolist()):
-            me_in_this_program = all_students_df[
-                (all_students_df["Образовательная программа"] == program_name) & (all_students_df["СНИЛС"] == SNILS)]
-            if me_in_this_program["Заявление о согласии на зачисление"].values[0] == "-":
-                desired_values.append("-")
-            else:
-                one_prog_students_df = all_students_df[(all_students_df["Образовательная программа"] == program_name)]
-                agreed_one_prog_students_df = one_prog_students_df[
-                    one_prog_students_df["Заявление о согласии на зачисление"] == "+"]
-                agreed_one_prog_students_df.reset_index(inplace=True, drop=True)
-                my_number = agreed_one_prog_students_df[agreed_one_prog_students_df["СНИЛС"] == SNILS].index[0]
-                if int(budget_places) - int(my_number) >= 0:
-                    desired_values.append("+")
-                else:
-                    desired_values.append("-")
-        only_me_df.loc[:, "get_budget_place"] = desired_values
-        only_me_dict = only_me_df.T.to_dict()
-        only_me_dict = list(only_me_dict.values())
-        return (only_me_dict)
 
 
     def save_file(file, file_name, path):
