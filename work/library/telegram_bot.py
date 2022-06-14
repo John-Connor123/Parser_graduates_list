@@ -1,4 +1,4 @@
-__all__ = ['get_telegram_graphs', 'create_telegram_bot', 'set_telegram_params_work', 'work_telegram_bot']
+__all__ = ['get_telegram_graphs', 'create_telegram_bot']
 
 import os
 import time
@@ -7,7 +7,6 @@ import shutil
 import pandas as pd
 
 import telebot
-from telebot import types
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 
@@ -18,7 +17,6 @@ website_link = ''
 flag_autoupdate = False
 flag_update_interval = False
 flag_SNILS = False
-# is_SNILS_exist парсит только по первой странице. Можно доработать
 
 
 def get_telegram_graphs(final_scores, agreements, BVI_number, all_places):
@@ -73,20 +71,23 @@ def create_telegram_bot():
             break
         if is_SNILS_exist() and not flag_SNILS:
             flag_SNILS = True
-            bot.send_message(message.from_user.id,
-                "Бот заработал. Чтобы получить актуальную информацию о вашем месте в списке поступающих, напишите комманду /update")
+            get_info(message)
+            bot.send_message(message.from_user.id, "Чтобы вывести список всех команд, напишите /commands")
 
-    @bot.message_handler(commands=['info'])
+    @bot.message_handler(commands=['show'])
     def get_info(message):
+        bot.send_message(message.from_user.id,
+                         "Пожалуйста, подождите. Информация о месте в списке поступающих будет приведена ниже.")
         dicts_list_to_bot = To_Bot(SNILS)
         for element in dicts_list_to_bot:
             output_message = f'''
             ОП: {element['Образовательная программа']}
-            Ваше место в списке: 1
             Количество бюджетных мест: {element['Бюджетные места']}
-            Проходите ли вы: {'Да' if element['get_budget_place'] else 'Нет'}
+            Проходите ли вы: {'Да' if element['get_budget_place'] == '+' else 'Нет'}
             '''
-            bot.reply_to(message, output_message)
+            bot.send_message(message.from_user.id, output_message)
+        bot.send_message(message.from_user.id,
+                         "Чтобы обновить информацию о вашем месте в списке поступающих, напишите команду /update")
 
     @bot.message_handler(commands=['update'])
     def get_update(message):
@@ -95,6 +96,29 @@ def create_telegram_bot():
         parse_website_link(website_link)
         get_info(message)
 
+    @bot.message_handler(commands=['commands'])
+    def show_all_commands(message):
+        all_commands = '''
+        Список всех команд:
+        /start - запускает бота
+        /show - последнюю сохранененную информацию еще раз
+        /update - обновляет информацию и выводит её
+        /commands - выводит список всех команд
+        /stop - выключает бота'''
+        bot.send_message(message.from_user.id, all_commands)
+
+    @bot.message_handler(commands=['stop'])
+    def stop_bot(message):
+        global SNILS, autoupdate_interval, website_link, flag_autoupdate, flag_update_interval, flag_SNILS
+        SNILS = None
+        autoupdate_interval = None
+        website_link = ''
+        flag_autoupdate = False
+        flag_update_interval = False
+        flag_SNILS = False
+        if os.path.exists(f"{os.getcwd()}\\students.xlsx"):
+            os.remove(f'{os.getcwd()}\\students.xlsx')
+        bot.send_message(message.from_user.id, "Данные успешно отчищены.")
 
     @bot.message_handler(func=lambda x: True)
     def welcome_message(message):
@@ -120,6 +144,38 @@ def parse_website_link(website_link):
     shutil.move(path_downloads, os.getcwd())
 
 
+def To_Bot(SNILS):
+    students = pd.read_excel(f'{os.getcwd()}\\students.xlsx')
+    all_students_df = students[["№ п/п", "СНИЛС", "Право поступления без вступительных испытаний",
+                                "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
+                                "Поступление на места по целевой квоте", "Образовательная программа",
+                                "Сумма конкурсных баллов", "Заявление о согласии на зачисление", "Бюджетные места"]]
+    only_me_df = all_students_df.loc[all_students_df["СНИЛС"] == SNILS]
+    desired_values = []
+    for program_name, budget_places in zip(only_me_df["Образовательная программа"].tolist(),
+                                           only_me_df["Бюджетные места"].tolist()):
+        me_in_this_program = all_students_df[
+            (all_students_df["Образовательная программа"] == program_name) & (all_students_df["СНИЛС"] == SNILS)]
+        if me_in_this_program["Заявление о согласии на зачисление"].values[0] == "-":
+            desired_values.append("-")
+            only_me_df.loc[:, "my_place"] = "-1"
+        else:
+            one_prog_students_df = all_students_df[(all_students_df["Образовательная программа"] == program_name)]
+            agreed_one_prog_students_df = one_prog_students_df[
+                one_prog_students_df["Заявление о согласии на зачисление"] == "+"]
+            agreed_one_prog_students_df.reset_index(inplace=True, drop=True)
+            my_number = agreed_one_prog_students_df[agreed_one_prog_students_df["СНИЛС"] == SNILS].index[0]
+            if int(budget_places) - int(my_number) >= 0:
+                desired_values.append("+")
+            else:
+                desired_values.append("-")
+            only_me_df.loc[:, "my_place"] = my_number
+    only_me_df.loc[:, "get_budget_place"] = desired_values
+    only_me_dict = only_me_df.T.to_dict()
+    only_me_dict = list(only_me_dict.values())
+    return (only_me_dict)
+
+
 def is_SNILS_exist():
     df = pd.read_excel('students.xlsx', sheet_name='Sheet1')
     if SNILS in set(df['СНИЛС'].to_list()):
@@ -127,27 +183,5 @@ def is_SNILS_exist():
     return False
 
 
-def set_telegram_params_work(auto_update=False):
-    '''
-    Настраивает работу telegram-бота.
-    :param auto_update: параметр равен True, если требуется автообновление данных.
-    Для единичного показа статистики параметр должен равняться False.
-    P.s. По умолчанию параметр равен False.
-    :return: None
-    '''
-    if auto_update:
-        time = get_update_interval()
-
-
-def work_telegram_bot():
-    '''
-    Функция, через которую осуществяется управление телеграмм ботом
-    :return: None
-    '''
-    # bot = create_telegram_bot()
-    # bot.polling()
-
-
 if __name__ == '__main__':
-    from Combine_Interface_with_pandas import To_Bot
     create_telegram_bot()

@@ -7,6 +7,7 @@ import tkinter as tk
 from PIL import ImageTk, Image
 from tkinter import ttk
 
+
 def entrant_data(students, without_exam, special_q, target_q, ed_progaram, points, operator):
     m = students[["№ п/п", "СНИЛС",
                   "Право поступления без вступительных испытаний",
