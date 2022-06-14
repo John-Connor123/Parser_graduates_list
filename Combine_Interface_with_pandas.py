@@ -14,7 +14,7 @@ bot_or_pril = True
 
 
 def To_Bot(SNILS):
-    students = pd.read_excel(f'{os.getcwd()}\\work\\library\\students.xlsx')
+    students = pd.read_excel(f'{os.getcwd()}\\students.xlsx')
     all_students_df = students[["№ п/п", "СНИЛС", "Право поступления без вступительных испытаний",
                                 "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
                                 "Поступление на места по целевой квоте", "Образовательная программа",

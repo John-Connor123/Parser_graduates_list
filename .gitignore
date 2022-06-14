@@ -1,0 +1,6 @@
+/Lib/
+/Scripts/
+/.idea/
+/work/library/__pycache__/
+/pyvenv.cfg
+/share/
