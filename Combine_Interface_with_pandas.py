@@ -1244,7 +1244,7 @@ def run_app():
         subscribe.pack(side="top")
 
 
-    def Entrant_data(students):
+    def Entrant_data():
         window = tk.Toplevel()
         window.geometry("1700x900")
         style = ttk.Style(window)

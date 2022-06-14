@@ -1,3 +1,5 @@
+import matplotlib.figure
+import matplotlib.pyplot as plt
 import os
 from os import listdir, makedirs, path
 import pandas as pd
@@ -97,11 +99,11 @@ def Get_SNILS_by_exam(students,exam, points, operator):
                 pass
             else:
                 m = m[m[exam] > points]
-        m.reset_index(inplace=True, drop=True)
-        plot1 = figure.add_subplot(211)
-        plot1.pie(counts.values(), labels=counts.keys())
-        m = m.sort_values(exam)
-        return m, figure
+            m.reset_index(inplace=True, drop=True)
+            plot1 = figure.add_subplot(211)
+            plot1.pie(counts.values(), labels=counts.keys())
+            m = m.sort_values(exam)
+            return m, figure
     else:
         data = {"СНИЛС": ["Нет"],
                 exam: ["0"],
