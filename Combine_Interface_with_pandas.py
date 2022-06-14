@@ -706,7 +706,7 @@ def run_app():
                 operator = operator + '>'
             if equally_var.get() == True:
                 operator = operator + '='
-            m = Get_SNILS_by_exam(exam_var.get(), points_var.get(), operator)
+            m = Get_SNILS_by_exam(students, exam_var.get(), points_var.get(), operator)
             save_file(m[0], name_xlsx_var.get(), path_xlsx_var.get())
             if create_graph_var.get() == True:
                 save_file(m[1], name_graph_var.get(), path_graph_var.get())
@@ -1280,12 +1280,10 @@ def run_app():
         window.geometry("1700x900")
         style = ttk.Style(window)
         style.theme_use("clam")
-
         def fixed_map(option):
             return [elm for elm in
                     style.map('Treeview', background="white", fieldbackground="white", foreground="black") if
                     elm[:2] != ('!disabled', '!selected')]
-
         table = ttk.Treeview(window,
                              columns=("N",
                                       "СНИЛС",
@@ -1373,7 +1371,7 @@ def run_app():
                 operator = operator + '>'
             if equally_var.get() == True:
                 operator = operator + '='
-            m = entrant_data(without_exam_var.get(),
+            m = entrant_data(students, without_exam_var.get(),
                              special_q_var.get(),
                              target_q_var.get(),
                              ed_progaram_var.get(),
@@ -1393,7 +1391,7 @@ def run_app():
                 operator = operator + '>'
             if equally_var.get() == True:
                 operator = operator + '='
-            m = entrant_data(without_exam_var.get(),
+            m = entrant_data(students, without_exam_var.get(),
                              special_q_var.get(),
                              target_q_var.get(),
                              ed_progaram_var.get(),
