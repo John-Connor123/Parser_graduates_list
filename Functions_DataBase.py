@@ -123,7 +123,6 @@ def Places_for_education(students, name, budget, paid):
     m = students[["Образовательная программа", "Бюджетные места", "Платные места"]]
     m = m.drop_duplicates(subset='Образовательная программа', keep='first')
     m.reset_index(inplace=True, drop=True)
-    name = '"' + name + '"'
     if name in m["Образовательная программа"].values:
         m = m[m["Образовательная программа"] == name]
     else:
