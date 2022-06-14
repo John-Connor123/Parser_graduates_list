@@ -1,5 +1,6 @@
 import matplotlib.figure
 import matplotlib.pyplot as plt
+from Functions_DataBase import *
 
 import os
 from os import listdir, makedirs, path
@@ -10,8 +11,7 @@ import tkinter as tk
 from PIL import ImageTk, Image
 from tkinter import ttk
 from work.library.telegram_bot import parse_website_link
-bot_or_pril = True
-
+bot_or_pril = "-1"
 
 def To_Bot(SNILS):
     students = pd.read_excel(f'{os.getcwd()}\\students.xlsx')
@@ -27,6 +27,7 @@ def To_Bot(SNILS):
             (all_students_df["Образовательная программа"] == program_name) & (all_students_df["СНИЛС"] == SNILS)]
         if me_in_this_program["Заявление о согласии на зачисление"].values[0] == "-":
             desired_values.append("-")
+            only_me_df.loc[:, "my_place"] = "-1"
         else:
             one_prog_students_df = all_students_df[(all_students_df["Образовательная программа"] == program_name)]
             agreed_one_prog_students_df = one_prog_students_df[
@@ -37,6 +38,7 @@ def To_Bot(SNILS):
                 desired_values.append("+")
             else:
                 desired_values.append("-")
+            only_me_df.loc[:, "my_place"] = my_number
     only_me_df.loc[:, "get_budget_place"] = desired_values
     only_me_dict = only_me_df.T.to_dict()
     only_me_dict = list(only_me_dict.values())
@@ -51,13 +53,13 @@ def start_menu():
 
     def pril():
         global bot_or_pril
-        bot_or_pril = True
+        bot_or_pril = "1"
         preview_window.destroy()
 
 
     def bot():
         global bot_or_pril
-        bot_or_pril = False
+        bot_or_pril = "0"
         preview_window.destroy()
 
 
@@ -70,7 +72,7 @@ def start_menu():
     but_pril.pack(side="top")
 
     message = """
-    Ваше высочество, вам предстоит выбрать
+    Вам предстоит выбрать
     в каком формате вы хотите работать с данным ПО.
     Если вам требуются общая статистика и анализ,
     то используйте приложение на компьютере.
@@ -85,22 +87,22 @@ def start_menu():
 
 def info_telegram_bot():
     bot_window = tk.Tk()
-    bot_window.geometry("1700x900+100+50")
+    bot_window.geometry("1500x700+100+50")
     bot_window.title("бот")
     lab = tk.Label(bot_window, text="@ParserstatsHSEbot", font=("Times", 50), fg='blue')
     lab.pack(side="top")
     path4 = "telega.png"
     img4 = Image.open(path4)
-    img4 = img4.resize((700, 550), Image.Resampling.LANCZOS)
+    img4 = img4.resize((400, 350), Image.Resampling.LANCZOS)
     img4 = ImageTk.PhotoImage(img4)
     panelka = tk.Label(bot_window, image=img4, cursor="pirate")
     panelka.pack(side="top", fill="both", expand="yes")
 
     message = """
-    Ваше высочество, перед вами окно телеграм-бота.
+    Перед вами окно телеграм-бота.
     С помощью этого тэга вы можете ему написать.
-    Просьба не закрывать данное окно,
-    пока используете телеграмм-бота.
+    Требуется закрыть данное окно,
+    чтобы использовать телеграмм-бота.
     Спасибо.
     """
     lab = tk.Label(bot_window, text=message, font=("Times", 30))
@@ -152,7 +154,6 @@ def run_app():
                               dtype='O')
         napravlenie = str(text_mas)[29:-2]
 
-        # print(Napravlenie)
         # Достаём количество бюджетных мест
         text_mas = np.loadtxt(f"{need_path}",
                               delimiter=';',
@@ -274,7 +275,6 @@ def run_app():
                       "Образовательная программа"]]
         return (m)
 
-
     def entrant_data_base():
         m = students[["СНИЛС",
                       "Право поступления без вступительных испытаний",
@@ -298,386 +298,6 @@ def run_app():
                       "Требуется общежитие на время обучения",
                       ]]
         return m
-
-
-    def entrant_data(without_exam, special_q, target_q, ed_progaram, points, operator):
-        m = students[["№ п/п", "СНИЛС",
-                      "Право поступления без вступительных испытаний",
-                      "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
-                      "Поступление на места по целевой квоте", "Образовательная программа",
-                      "Сумма конкурсных баллов"]]
-        if without_exam == "1":
-            m = m[m["Право поступления без вступительных испытаний"] != ""]
-        if without_exam == "0":
-            m = m[m["Право поступления без вступительных испытаний"] == ""]
-        if special_q == "1":
-            m = m[m["Поступление на места в рамках особой квоты для лиц, имеющих особое право"] == "+"]
-        if special_q == "0":
-            m = m[m["Поступление на места в рамках особой квоты для лиц, имеющих особое право"] == "-"]
-        if target_q == "1":
-            m = m[m["Поступление на места по целевой квоте"] == "+"]
-        if target_q == "0":
-            m = m[m["Поступление на места по целевой квоте"] == "-"]
-        if ed_progaram in m["Образовательная программа"].values:
-            m = m[m["Образовательная программа"] == ed_progaram]
-        try:
-            points = int(points)
-        except ValueError:
-            error_of_int = True
-        else:
-            error_of_int = False
-        if error_of_int == False:
-            m.loc[m["Сумма конкурсных баллов"] == "", "Сумма конкурсных баллов"] = 0
-            m.loc[:, "Сумма конкурсных баллов"] = m["Сумма конкурсных баллов"].astype(int)
-            if operator == '>':
-                m = m[m["Сумма конкурсных баллов"] > points]
-            elif operator == '<':
-                m = m[m["Сумма конкурсных баллов"] < points]
-            elif operator == '=':
-                m = m[m["Сумма конкурсных баллов"] == points]
-            elif operator == '<=':
-                m = m[m["Сумма конкурсных баллов"] <= points]
-            elif operator == '>=':
-                m = m[m["Сумма конкурсных баллов"] >= points]
-            elif operator == '<>':
-                m = m[m["Сумма конкурсных баллов"] != points]
-            elif operator == '<>=':
-                pass
-            else:
-                m = m[m["Сумма конкурсных баллов"] > points]
-        return m
-
-
-    def Get_SNILS_by_exam(exam, points, operator):
-        if exam in students:
-            m = students[["СНИЛС", exam, "Сумма конкурсных баллов"]]
-            counts = {"< " + str(points): 0, "= " + str(points): 0, "> " + str(points): 0}
-            m = m[~m[exam].isnull()]
-            m = m[m[exam] != ""]
-            m.loc[m[exam] == "", exam] = 0
-            m.loc[:, exam] = m[exam].astype(int)
-            figure = matplotlib.figure.Figure(figsize=(10, 10), dpi=100)
-            plot = figure.add_subplot(212)
-            plot.boxplot(m[[exam]], notch=True, showmeans=True, whis=1.5, vert=False, showfliers=False)
-            try:
-                points = int(points)
-            except ValueError:
-                error_of_int = True
-            else:
-                error_of_int = False
-            if error_of_int == False:
-                for score in m[exam]:
-                    if score < points:
-                        counts["< " + str(points)] += 1
-                    elif score == points:
-                        counts["= " + str(points)] += 1
-                    else:
-                        counts["> " + str(points)] += 1
-                if operator == '>':
-                    m = m[m[exam] > points]
-                elif operator == '<':
-                    m = m[m[exam] < points]
-                elif operator == '=':
-                    m = m[m[exam] == points]
-                elif operator == '<=':
-                    m = m[m[exam] <= points]
-                elif operator == '>=':
-                    m = m[m[exam] >= points]
-                elif operator == '<>':
-                    m = m[m[exam] != points]
-                elif operator == '<>=':
-                    pass
-                else:
-                    m = m[m[exam] > points]
-            m.reset_index(inplace=True, drop=True)
-            plot1 = figure.add_subplot(211)
-            plot1.pie(counts.values(), labels=counts.keys())
-            m = m.sort_values(exam)
-            return m, figure
-        else:
-            data = {"СНИЛС": ["Нет"],
-                    exam: ["0"],
-                    "Сумма конкурсных баллов": ["0"]}
-            m = pd.DataFrame(data)
-            n = m
-            m.reset_index(inplace=True, drop=True)
-            m = m.set_index("СНИЛС")
-            m.loc[:, exam] = m[exam].astype(int)
-            m.loc[:, "Сумма конкурсных баллов"] = m["Сумма конкурсных баллов"].astype(int)
-            m.reset_index(inplace=True, drop=True)
-            bar_graph = m.plot(figsize=(26, 25), kind="bar")
-            figure = bar_graph.get_figure()
-            return n, figure
-
-
-    def Places_for_education(name, budget, paid):
-        m = students[["Образовательная программа", "Бюджетные места", "Платные места"]]
-        m = m.drop_duplicates(subset='Образовательная программа', keep='first')
-        m.reset_index(inplace=True, drop=True)
-        name = '"' + name + '"'
-        if name in m["Образовательная программа"].values:
-            m = m[m["Образовательная программа"] == name]
-        else:
-            pass
-        if budget == True:
-            m = m[m["Бюджетные места"] == "0"]
-        if paid == True:
-            m = m[m["Платные места"] == "0"]
-        n = m
-        isempty = n.empty
-        if isempty == False:
-            m.reset_index(inplace=True, drop=True)
-            m = m.set_index("Образовательная программа")
-            m.loc[:, "Бюджетные места"] = m["Бюджетные места"].astype(int)
-            m.loc[:, "Платные места"] = m["Платные места"].astype(int)
-            bar_graph = m.plot(figsize=(26, 25), kind="bar")
-            figure = bar_graph.get_figure()
-        else:
-            data = {"Образовательная программа": ["Нет"],
-                    "Бюджетные места": ["0"],
-                    "Платные места": ["0"]}
-            m = pd.DataFrame(data)
-            n = m
-            m.reset_index(inplace=True, drop=True)
-            m = m.set_index("Образовательная программа")
-            m.loc[:, "Бюджетные места"] = m["Бюджетные места"].astype(int)
-            m.loc[:, "Платные места"] = m["Платные места"].astype(int)
-            bar_graph = m.plot(figsize=(26, 25), kind="bar")
-            figure = bar_graph.get_figure()
-        return n, figure
-
-
-    def quota_program_breakdown():
-        m = students[['№ п/п', 'Заявление о согласии на зачисление',
-                      'Право поступления без вступительных испытаний',
-                      'Поступление на места в рамках особой квоты для лиц, имеющих особое право',
-                      'Поступление на места по целевой квоте',
-                      'Сумма конкурсных баллов', 'Возврат документов',
-                      'Образовательная программа', 'Бюджетные места',
-                      'Платные места',
-                      'Литература',
-                      'Русский язык',
-                      'Иностранный язык',
-                      'История',
-                      'Математика',
-                      'Биология',
-                      'Химия',
-                      'Обществознание',
-                      'Творческий конкурс Дизайн',
-                      'Физика',
-                      'География',
-                      'Информатика',
-                      'Творческий конкурс Медиа',
-                      'Творческий конкурс Мода',
-                      'Творческий конкурс I этап']]
-
-        m = m.loc[m['Заявление о согласии на зачисление'] == '+']
-        m = m.loc[m['Право поступления без вступительных испытаний'] == '']
-        m = m.loc[m['Возврат документов'] == '-']
-        m["Quota"] = np.where((m["Поступление на места по целевой квоте"] == "+") | (
-                    m["Поступление на места в рамках особой квоты для лиц, имеющих особое право"] == "+"), "Quota",
-                              "No quota")
-        m.drop(["Поступление на места по целевой квоте",
-                "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
-                "Право поступления без вступительных испытаний", 'Возврат документов',
-                'Заявление о согласии на зачисление', "№ п/п", "Бюджетные места", "Платные места",
-                'Сумма конкурсных баллов'], axis=1, inplace=True)
-        m = pd.melt(m, id_vars=['Образовательная программа', 'Quota'], value_vars=['Литература',
-                                                                                   'Русский язык',
-                                                                                   'Иностранный язык',
-                                                                                   'История',
-                                                                                   'Математика',
-                                                                                   'Биология',
-                                                                                   'Химия',
-                                                                                   'Обществознание',
-                                                                                   'Творческий конкурс Дизайн',
-                                                                                   'Физика',
-                                                                                   'География',
-                                                                                   'Информатика',
-                                                                                   'Творческий конкурс Медиа',
-                                                                                   'Творческий конкурс Мода',
-                                                                                   'Творческий конкурс I этап'])
-        m.value[m.value == ""] = 0
-        m["value"] = m.value.astype(float)
-        n = pd.pivot_table(m, values='value', index=['Образовательная программа', 'Quota'], columns=['variable'],
-                           aggfunc=np.mean)
-        n.to_excel('./quota_program_breakdown.xlsx', na_rep='')
-
-
-    def quota_program_breakdown_for_treeview():
-        m = students[['№ п/п', 'Заявление о согласии на зачисление',
-                      'Право поступления без вступительных испытаний',
-                      'Поступление на места в рамках особой квоты для лиц, имеющих особое право',
-                      'Поступление на места по целевой квоте',
-                      'Сумма конкурсных баллов', 'Возврат документов',
-                      'Образовательная программа', 'Бюджетные места',
-                      'Платные места',
-                      'Литература',
-                      'Русский язык',
-                      'Иностранный язык',
-                      'История',
-                      'Математика',
-                      'Биология',
-                      'Химия',
-                      'Обществознание',
-                      'Творческий конкурс Дизайн',
-                      'Физика',
-                      'География',
-                      'Информатика',
-                      'Творческий конкурс Медиа',
-                      'Творческий конкурс Мода',
-                      'Творческий конкурс I этап']]
-        m = m.loc[m['Заявление о согласии на зачисление'] == '+']
-        m = m.loc[m['Право поступления без вступительных испытаний'] == '']
-        m = m.loc[m['Возврат документов'] == '-']
-        m["Quota"] = np.where((m["Поступление на места по целевой квоте"] == "+") | (
-                    m["Поступление на места в рамках особой квоты для лиц, имеющих особое право"] == "+"), "Quota",
-                              "No quota")
-        m.drop(["Поступление на места по целевой квоте",
-                "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
-                "Право поступления без вступительных испытаний", 'Возврат документов',
-                'Заявление о согласии на зачисление', "№ п/п", "Бюджетные места", "Платные места",
-                'Сумма конкурсных баллов'], axis=1, inplace=True)
-        m = pd.melt(m, id_vars=['Образовательная программа', 'Quota'], value_vars=['Литература',
-                                                                                   'Русский язык',
-                                                                                   'Иностранный язык',
-                                                                                   'История',
-                                                                                   'Математика',
-                                                                                   'Биология',
-                                                                                   'Химия',
-                                                                                   'Обществознание',
-                                                                                   'Творческий конкурс Дизайн',
-                                                                                   'Физика',
-                                                                                   'География',
-                                                                                   'Информатика',
-                                                                                   'Творческий конкурс Медиа',
-                                                                                   'Творческий конкурс Мода',
-                                                                                   'Творческий конкурс I этап'])
-        m.value[m.value == ""] = 0
-        m["value"] = m.value.astype(float)
-        n = pd.pivot_table(m, values='value', index=['Образовательная программа', 'Quota'], columns=['variable'],
-                           aggfunc=np.mean).reset_index()
-        return (n)
-
-
-    def right_program_breakdown():
-        m = students[['№ п/п', 'Заявление о согласии на зачисление',
-                      'Право поступления без вступительных испытаний',
-                      'Поступление на места в рамках особой квоты для лиц, имеющих особое право',
-                      'Поступление на места по целевой квоте', 'Сумма конкурсных баллов',
-                      'Возврат документов', 'Образовательная программа', 'Бюджетные места',
-                      'Платные места',
-                      'Литература',
-                      'Русский язык',
-                      'Иностранный язык',
-                      'История',
-                      'Математика',
-                      'Биология',
-                      'Химия',
-                      'Обществознание',
-                      'Творческий конкурс Дизайн',
-                      'Физика',
-                      'География',
-                      'Информатика',
-                      'Творческий конкурс Медиа',
-                      'Творческий конкурс Мода',
-                      'Творческий конкурс I этап']]
-        m = m.loc[m['Заявление о согласии на зачисление'] == '+']
-        m = m.loc[m['Поступление на места по целевой квоте'] == '-']
-        m = m.loc[m['Поступление на места в рамках особой квоты для лиц, имеющих особое право'] == '-']
-        m = m.loc[m['Возврат документов'] == '-']
-        m["Right_to_no_exams"] = np.where((m['Право поступления без вступительных испытаний'] != ""), "No_exams",
-                                          "No_right")
-        m.drop(["Поступление на места по целевой квоте",
-                "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
-                "Право поступления без вступительных испытаний",
-                'Возврат документов',
-                'Заявление о согласии на зачисление',
-                "№ п/п",
-                "Бюджетные места",
-                "Платные места",
-                'Сумма конкурсных баллов'], axis=1, inplace=True)
-        m = pd.melt(m, id_vars=['Образовательная программа', 'Right_to_no_exams'], value_vars=['Литература',
-                                                                                               'Русский язык',
-                                                                                               'Иностранный язык',
-                                                                                               'История',
-                                                                                               'Математика',
-                                                                                               'Биология',
-                                                                                               'Химия',
-                                                                                               'Обществознание',
-                                                                                               'Творческий конкурс Дизайн',
-                                                                                               'Физика',
-                                                                                               'География',
-                                                                                               'Информатика',
-                                                                                               'Творческий конкурс Медиа',
-                                                                                               'Творческий конкурс Мода',
-                                                                                               'Творческий конкурс I этап'])
-        m.value[m.value == ""] = 0
-        m["value"] = m.value.astype(float)
-        n = pd.pivot_table(m, values='value', index=['Образовательная программа', 'Right_to_no_exams'],
-                           columns=['variable'], aggfunc=np.mean)
-        n.to_excel('./right_program_breakdown.xlsx', na_rep='')
-
-
-    def right_program_breakdown_for_treeview():
-        m = students[['№ п/п', 'Заявление о согласии на зачисление',
-                      'Право поступления без вступительных испытаний',
-                      'Поступление на места в рамках особой квоты для лиц, имеющих особое право',
-                      'Поступление на места по целевой квоте', 'Сумма конкурсных баллов',
-                      'Возврат документов', 'Образовательная программа', 'Бюджетные места',
-                      'Платные места',
-                      'Литература',
-                      'Русский язык',
-                      'Иностранный язык',
-                      'История',
-                      'Математика',
-                      'Биология',
-                      'Химия',
-                      'Обществознание',
-                      'Творческий конкурс Дизайн',
-                      'Физика',
-                      'География',
-                      'Информатика',
-                      'Творческий конкурс Медиа',
-                      'Творческий конкурс Мода',
-                      'Творческий конкурс I этап']]
-        m = m.loc[m['Заявление о согласии на зачисление'] == '+']
-        m = m.loc[m['Поступление на места по целевой квоте'] == '-']
-        m = m.loc[m['Поступление на места в рамках особой квоты для лиц, имеющих особое право'] == '-']
-        m = m.loc[m['Возврат документов'] == '-']
-        m["Right_to_no_exams"] = np.where((m['Право поступления без вступительных испытаний'] != ""), "No_exams",
-                                          "No_right")
-        m.drop(["Поступление на места по целевой квоте",
-                "Поступление на места в рамках особой квоты для лиц, имеющих особое право",
-                "Право поступления без вступительных испытаний",
-                'Возврат документов',
-                'Заявление о согласии на зачисление',
-                "№ п/п",
-                "Бюджетные места",
-                "Платные места",
-                'Сумма конкурсных баллов'], axis=1, inplace=True)
-        m = pd.melt(m, id_vars=['Образовательная программа', 'Right_to_no_exams'], value_vars=['Литература',
-                                                                                               'Русский язык',
-                                                                                               'Иностранный язык',
-                                                                                               'История',
-                                                                                               'Математика',
-                                                                                               'Биология',
-                                                                                               'Химия',
-                                                                                               'Обществознание',
-                                                                                               'Творческий конкурс Дизайн',
-                                                                                               'Физика',
-                                                                                               'География',
-                                                                                               'Информатика',
-                                                                                               'Творческий конкурс Медиа',
-                                                                                               'Творческий конкурс Мода',
-                                                                                               'Творческий конкурс I этап'])
-        m.value[m.value == ""] = 0
-        m["value"] = m.value.astype(float)
-        n = pd.pivot_table(m, values='value', index=['Образовательная программа', 'Right_to_no_exams'],
-                           columns=['variable'], aggfunc=np.mean).reset_index()
-        return (n)
-
-
 
 
     def save_file(file, file_name, path):
@@ -1071,7 +691,7 @@ def run_app():
                 operator = operator + '>'
             if equally_var.get() == True:
                 operator = operator + '='
-            m = Get_SNILS_by_exam(exam_var.get(), points_var.get(), operator)
+            m = Get_SNILS_by_exam(students, exam_var.get(), points_var.get(), operator)
             x = 0
             for i in m[0].iterrows():
                 rowLabels = m[0].index.tolist()
@@ -1345,7 +965,7 @@ def run_app():
 
         def places_create_table():
             table.delete(*table.get_children())
-            m = Places_for_education(ed_progaram_var.get(), budget_var.get(), paid_var.get())
+            m = Places_for_education(students, ed_progaram_var.get(), budget_var.get(), paid_var.get())
             x = 0
             for i in m[0].iterrows():
                 rowLabels = m[0].index.tolist()
@@ -1353,7 +973,7 @@ def run_app():
                 x += 1
 
         def save_places():
-            n = Places_for_education(ed_progaram_var.get(), budget_var.get(), paid_var.get())
+            n = Places_for_education(students, ed_progaram_var.get(), budget_var.get(), paid_var.get())
             save_file(n[0], name_xlsx_var.get(), path_xlsx_var.get())
             if create_graph_var.get() == True:
                 save_file(n[1], name_graph_var.get(), path_graph_var.get())
@@ -1655,7 +1275,7 @@ def run_app():
         subscribe.pack(side="top")
 
 
-    def Entrant_data():
+    def Entrant_data(students):
         window = tk.Toplevel()
         window.geometry("1700x900")
         style = ttk.Style(window)
@@ -2224,7 +1844,7 @@ def run_app():
         table.heading('Творческий конкурс Мода', text='Т.к. Мода', anchor="center")
         table.heading('Творческий конкурс I этап', text='Т.к. I этап', anchor="center")
         table.pack(side="right", fill="both", expand=True)
-        m = quota_program_breakdown_for_treeview()
+        m = quota_program_breakdown_for_treeview(students)
         x = 0
         for i in m.iterrows():
             rowLabels = m.index.tolist()
@@ -2363,7 +1983,7 @@ def run_app():
         table.heading('Творческий конкурс Мода', text='Т.к. Мода', anchor="center")
         table.heading('Творческий конкурс I этап', text='Т.к. I этап', anchor="center")
         table.pack(side="right", fill="both", expand=True)
-        m = right_program_breakdown_for_treeview()
+        m = right_program_breakdown_for_treeview(students)
         x = 0
         for i in m.iterrows():
             rowLabels = m.index.tolist()
