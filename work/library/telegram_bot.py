@@ -3,7 +3,6 @@ __all__ = ['get_telegram_graphs', 'create_telegram_bot', 'set_telegram_params_wo
 import os
 import time
 import shutil
-import traceback
 
 import pandas as pd
 
@@ -14,6 +13,7 @@ from selenium.webdriver.common.by import By
 
 SNILS = None
 autoupdate_interval = None
+website_link = ''
 
 flag_autoupdate = False
 flag_update_interval = False
@@ -48,6 +48,7 @@ def create_telegram_bot():
         bot.register_next_step_handler(message, get_google_sheets)
 
     def get_google_sheets(message):
+        global website_link
         flag_google_sheets = False
         while not os.path.exists('students.xlsx'):
             try:
@@ -72,76 +73,28 @@ def create_telegram_bot():
             break
         if is_SNILS_exist() and not flag_SNILS:
             flag_SNILS = True
-            bot.send_message(message.from_user.id, "Хотите добавить автопроверку на изменение вас в списке поступающих?")
-            bot.register_next_step_handler(message, set_autoupdate)
-
-    def set_autoupdate(message):
-        global autoupdate_interval, flag_autoupdate
-        while message.text.strip().lower() not in ['да', 'нет']:
-            bot.reply_to(message, "Ответ должен быть 'Да' или 'Нет'")
-            bot.register_next_step_handler(message, set_autoupdate)
-            break
-
-        if message.text.strip().lower() == 'да' and not flag_autoupdate:
-            flag_autoupdate = True
-            bot.send_message(message.from_user.id,
-                             "Укажите интервал обновления информации в часах/минутах(пример: 1.5ч; 10мин): ")
-            bot.register_next_step_handler(message, set_update_interval)
-        elif message.text.strip().lower() == 'нет' and not flag_autoupdate:
-            flag_autoupdate = True
-            autoupdate_interval = 0
-            print("ОК")
-
-    def set_update_interval(message):
-        global flag_update_interval
-        global autoupdate_interval
-        while autoupdate_interval is None:
-            try:
-                bot.reply_to(message, '1')
-                bot.register_next_step_handler(message, get_update_interval)
-                bot.reply_to(message, '2')
-            except:
-                bot.reply_to(message, "Неправильный формат данных.")
-                bot.register_next_step_handler(message, set_update_interval)
-                break
-
-        if (autoupdate_interval is not None) and (not flag_update_interval):
-            flag_update_interval = True
             bot.send_message(message.from_user.id,
                 "Бот заработал. Чтобы получить актуальную информацию о вашем месте в списке поступающих, напишите комманду /update")
 
-    def get_update_interval(message):
-        print("get_update_interval")
-        global autoupdate_interval
-        interval = message.text
-        if interval[-1] == 'ч':
-            autoupdate_interval = interval[:-1]
-            if autoupdate_interval.find('.') != -1:
-                autoupdate_interval = str(float(autoupdate_interval))
-                if set(autoupdate_interval.split('.')) == {'0'}:
-                    autoupdate_interval = 0
-                else:
-                    autoupdate_interval = float(autoupdate_interval) * 60
-            else:
-                autoupdate_interval = int(autoupdate_interval) * 60
-        if interval[-3:] == 'мин':
-            autoupdate_interval = interval[:-3]
-            if autoupdate_interval.find('.') != -1:
-                autoupdate_interval = str(float(autoupdate_interval))
-                if set(autoupdate_interval.split('.')) == {'0'}:
-                    autoupdate_interval = 0
-                else:
-                    autoupdate_interval = float(autoupdate_interval)
-            else:
-                autoupdate_interval = int(autoupdate_interval)
-        autoupdate_interval = round(autoupdate_interval * 60)
-        if autoupdate_interval < 1:
-            autoupdate_interval = None
-            print(autoupdate_interval)
+    @bot.message_handler(commands=['info'])
+    def get_info(message):
+        dicts_list_to_bot = To_Bot(SNILS)
+        for element in dicts_list_to_bot:
+            output_message = f'''
+            ОП: {element['Образовательная программа']}
+            Ваше место в списке: 1
+            Количество бюджетных мест: {element['Бюджетные места']}
+            Проходите ли вы: {'Да' if element['get_budget_place'] else 'Нет'}
+            '''
+            bot.reply_to(message, output_message)
 
     @bot.message_handler(commands=['update'])
     def get_update(message):
-        bot.send_message(message.from_user.id, "Бот работает")
+        bot.send_message(message.from_user.id, "Подождите пожалуйста. Бот обновляет данные и анализирует их")
+        os.remove(f'{os.getcwd()}\\students.xlsx')
+        parse_website_link(website_link)
+        get_info(message)
+
 
     @bot.message_handler(func=lambda x: True)
     def welcome_message(message):
@@ -168,8 +121,6 @@ def parse_website_link(website_link):
 
 
 def is_SNILS_exist():
-    #удалить след строчку
-    return True
     df = pd.read_excel('students.xlsx', sheet_name='Sheet1')
     if SNILS in set(df['СНИЛС'].to_list()):
         return True
@@ -195,4 +146,8 @@ def work_telegram_bot():
     '''
     # bot = create_telegram_bot()
     # bot.polling()
-create_telegram_bot()
+
+
+if __name__ == '__main__':
+    from Combine_Interface_with_pandas import To_Bot
+    create_telegram_bot()
