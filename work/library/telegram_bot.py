@@ -1,4 +1,4 @@
-__all__ = ['get_telegram_graphs', 'create_telegram_bot']
+__all__ = ['create_telegram_bot']
 
 import os
 import time
@@ -17,19 +17,6 @@ website_link = ''
 flag_autoupdate = False
 flag_update_interval = False
 flag_SNILS = False
-
-
-def get_telegram_graphs(final_scores, agreements, BVI_number, all_places):
-    '''
-    Выводит диаграмму с соотношением ЕГЭшников, олимпиадников, льготников.
-    Также выводит график зависимости кол-ва поданных заявлений от кол-ва дней
-    :param final_scores: список из суммы баллов по ЕГЭ для каждого абитуриента
-    :param agreements: список, содержащий информацию о том, подал ли заявление каждый абитуриент
-    :param BVI_number: кол-во олимпиадников
-    :param all_places: общее кол-во конкурсных мест
-    :return: Функция возвращает None
-    '''
-    pass
 
 
 def create_telegram_bot():
