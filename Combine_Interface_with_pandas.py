@@ -115,7 +115,7 @@ def run_app():
         :return: таблица с данными, собранными из всех таблиц
         """
         new_my_path = my_path + "\csv/"
-        if not path.exists(my_path + "/csv"):
+        if not os.path.exists(my_path + "/csv"):
             makedirs(my_path + "/csv")
         for name in listdir(my_path):
             if name == "csv":
@@ -226,6 +226,11 @@ def run_app():
         try:
             parse_website_link(link_var.get())
             students = pd.read_excel(f'{os.getcwd()}\\work\\library\\students.xlsx')
+            students = students.rename(columns={'Русский язык ЕГЭ': 'Русский язык',
+                                                'История ЕГЭ': 'История',
+                                                'Математика ЕГЭ': 'Математика',
+                                                'Биология ЕГЭ': 'Биология',
+                                                'Обществознание ЕГЭ': 'Обществознание'})
             start_window.destroy()
         except:
             link_var.set("Некорректная ссылка")
@@ -240,11 +245,7 @@ def run_app():
     start_window.mainloop()
 
     # А здесь я начинаю искать нужные мне данные
-    students = students.rename(columns={'Русский язык ЕГЭ': 'Русский язык',
-                                        'История ЕГЭ': 'История',
-                                        'Математика ЕГЭ': 'Математика',
-                                        'Биология ЕГЭ': 'Биология',
-                                        'Обществознание ЕГЭ': 'Обществознание'})
+
 
 
     def Obr_program_bd():
